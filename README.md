@@ -40,10 +40,10 @@
   </div>
   
   <script>
-    const historico = []; // Armazena o histórico localmente
+    const historico = [];
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
     
-    function consultarNota() {
+    async function consultarNota() {
       const chaveAcesso = document.getElementById('chaveAcesso').value.trim();
       
       if (!chaveAcesso) {
@@ -56,24 +56,32 @@
         return;
       }
       
-      // Mostra mensagem de carregamento
       exibirMensagem('Consultando nota fiscal...', 'sucesso');
       
-      // Faz a requisição para o WebApp
-      fetch(`${WEB_APP_URL}?chave=${encodeURIComponent(chaveAcesso)}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Erro na resposta do servidor');
-          }
-          return response.json();
-        })
-        .then(data => processarResposta(data))
-        .catch(error => exibirErro(error));
+      try {
+        // Usando POST em vez de GET para evitar problemas com CORS
+        const response = await fetch(WEB_APP_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `chave=${encodeURIComponent(chaveAcesso)}`
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Erro HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        processarResposta(data);
+      } catch (error) {
+        console.error('Erro na requisição:', error);
+        exibirErro(error);
+      }
     }
     
     function processarResposta(dados) {
       if (dados && dados.valido) {
-        // Adiciona ao histórico
         adicionarAoHistorico({
           numeroNF: dados.numeroNF,
           totalItens: dados.totalItens,
@@ -83,7 +91,6 @@
         
         exibirMensagem(`NOTA FISCAL VÁLIDA E LANÇADA - ${dados.numeroNF}`, 'sucesso');
       } else {
-        // Adiciona ao histórico como inválida
         adicionarAoHistorico({
           numeroNF: 'N/A',
           totalItens: '0',
@@ -91,10 +98,9 @@
           status: 'INVÁLIDA'
         });
         
-        exibirMensagem('NOTA FISCAL INVÁLIDA', 'erro');
+        exibirMensagem(dados.mensagem || 'NOTA FISCAL INVÁLIDA', 'erro');
       }
       
-      // Limpa o campo de entrada
       document.getElementById('chaveAcesso').value = '';
       document.getElementById('chaveAcesso').focus();
     }
@@ -106,14 +112,11 @@
     }
     
     function exibirErro(error) {
-      exibirMensagem('Erro: ' + (error.message || 'Falha na consulta'), 'erro');
+      exibirMensagem('Erro na consulta: ' + (error.message || 'Servidor não respondeu'), 'erro');
     }
     
     function adicionarAoHistorico(item) {
-      // Adiciona no início do array
       historico.unshift(item);
-      
-      // Atualiza a tabela de histórico
       atualizarHistorico();
     }
     
@@ -121,7 +124,6 @@
       const corpo = document.getElementById('corpoHistorico');
       corpo.innerHTML = '';
       
-      // Limita a 10 itens no histórico
       const historicoExibir = historico.slice(0, 10);
       
       historicoExibir.forEach(item => {
@@ -138,7 +140,6 @@
       });
     }
     
-    // Permite pressionar Enter para consultar
     document.getElementById('chaveAcesso').addEventListener('keypress', function(e) {
       if (e.key === 'Enter') consultarNota();
     });
