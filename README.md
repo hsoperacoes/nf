@@ -94,9 +94,6 @@
     </div>
 
     <script>
-        // Verificação inicial
-        console.log("Sistema iniciado");
-        
         // Configurações
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
         const historico = [];
@@ -130,25 +127,12 @@
             mostrarResultado("Consultando...", "sucesso");
             
             try {
-                // Simulação de consulta (REMOVA QUANDO FOR USAR O WEBAPP REAL)
-                const dadosSimulados = {
-                    numeroNF: chave.substring(25, 34),
-                    totalItens: "15",
-                    valorTotal: "1250,50",
-                    status: "VÁLIDA"
-                };
-                
-                adicionarAoHistorico(dadosSimulados);
-                mostrarResultado(`NF ${dadosSimulados.numeroNF} válida`, "sucesso");
-                
-                // Para usar o WebApp real, descomente:
-                // const dados = await consultarWebApp(chave);
-                // adicionarAoHistorico(dados);
-                // mostrarResultado(`NF ${dados.numeroNF} encontrada`, "sucesso");
-                
+                const dados = await consultarWebApp(chave);
+                adicionarAoHistorico(dados);
+                mostrarResultado(`NF ${dados.numeroNF} encontrada: ${dados.totalItens} itens (R$ ${dados.valorTotal})`, "sucesso");
             } catch (error) {
                 console.error("Erro:", error);
-                mostrarResultado("Erro na consulta", "erro");
+                mostrarResultado("Erro na consulta: " + error.message, "erro");
                 adicionarAoHistorico({
                     numeroNF: "ERRO",
                     totalItens: "0",
@@ -158,31 +142,46 @@
             }
         }
         
-        // Função para consultar o WebApp (DESCOMENTE QUANDO FOR USAR)
-        /*
+        // Função para consultar o WebApp
         async function consultarWebApp(chave) {
-            const response = await fetch(`${WEB_APP_URL}?chave=${encodeURIComponent(chave)}`);
+            // Usando proxy para contornar CORS
+            const proxyUrl = `https://cors-anywhere.herokuapp.com/${WEB_APP_URL}?chave=${encodeURIComponent(chave)}`;
+            
+            const response = await fetch(proxyUrl, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
             
             if (!response.ok) {
-                throw new Error("Erro na resposta");
+                throw new Error("Erro na resposta do servidor");
             }
             
             const data = await response.json();
             
             if (!data.success) {
-                throw new Error(data.message || "Erro desconhecido");
+                throw new Error(data.message || "Nota fiscal não encontrada");
             }
             
             return {
-                numeroNF: data.data.numeroNF,
-                totalItens: data.data.totalItens,
-                valorTotal: data.data.valorTotal,
-                status: data.data.status
+                numeroNF: data.data.numeroNF || "N/A",
+                totalItens: data.data.totalItens || "0",
+                valorTotal: formatarMoeda(data.data.valorTotal) || "0,00",
+                status: data.data.status || "VÁLIDA"
             };
         }
-        */
         
         // Funções auxiliares
+        function formatarMoeda(valor) {
+            if (!valor) return "0,00";
+            const num = Number(valor.toString().replace(',', '.'));
+            return isNaN(num) ? "0,00" : num.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        
         function mostrarResultado(mensagem, tipo) {
             divResultado.textContent = mensagem;
             divResultado.className = tipo;
