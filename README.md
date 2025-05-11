@@ -106,7 +106,7 @@
   </div>
 
   <script>
-    // Verificação inicial - remove depois de testar
+    // Verificação inicial
     console.log("Script carregado com sucesso!");
     document.addEventListener('DOMContentLoaded', function() {
       console.log("DOM totalmente carregado!");
@@ -121,8 +121,8 @@
     const divResultado = document.getElementById('resultado');
     const corpoHistorico = document.getElementById('corpoHistorico');
     
-    // URL do WebApp - substitua pela sua URL real
-    const WEB_APP_URL = "SUA_URL_DO_WEBAPP_AQUI";
+    // URL do WebApp - substituída pela sua URL fornecida
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
     
     // Event Listeners
     btnConsultar.addEventListener('click', consultarNota);
@@ -148,8 +148,8 @@
       mostrarResultado('Consultando nota fiscal...', 'sucesso');
       
       try {
-        // Simulação de consulta - substitua pela chamada real ao seu WebApp
-        const dadosNota = await simularConsultaWebApp(chave);
+        // Chamada real ao WebApp
+        const dadosNota = await consultarWebApp(chave);
         
         // Adiciona ao histórico
         adicionarAoHistorico(dadosNota);
@@ -157,7 +157,7 @@
         // Mostra resultado
         mostrarResultado(
           `NF ${dadosNota.numeroNF} encontrada: ${dadosNota.totalItens} itens, Valor Total R$ ${dadosNota.valorTotal}`,
-          'sucesso'
+          dadosNota.status === 'VÁLIDA' ? 'sucesso' : 'erro'
         );
         
       } catch (error) {
@@ -172,17 +172,50 @@
       }
     }
     
-    // Função de simulação - REMOVA QUANDO FOR USAR O WEBAPP REAL
-    function simularConsultaWebApp(chave) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            numeroNF: chave.substring(25, 34),
-            totalItens: "10",
-            valorTotal: "1.250,50",
-            status: "VÁLIDA"
-          });
-        }, 1000);
+    // Função para consultar o WebApp real
+    async function consultarWebApp(chave) {
+      // Usando um proxy CORS para contornar restrições
+      const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+      const urlCompleta = `${proxyUrl}${WEB_APP_URL}?chave=${encodeURIComponent(chave)}`;
+      
+      const response = await fetch(urlCompleta, {
+        method: 'GET',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erro na resposta do servidor');
+      }
+      
+      const data = await response.json();
+      
+      // Verifica se a resposta tem a estrutura esperada
+      if (!data || !data.success || !data.data) {
+        throw new Error(data?.message || 'Resposta inválida do servidor');
+      }
+      
+      return {
+        numeroNF: data.data.numeroNF || 'N/A',
+        totalItens: data.data.totalItens || '0',
+        valorTotal: formatarMoeda(data.data.valorTotal) || '0,00',
+        status: data.data.status || 'VÁLIDA'
+      };
+    }
+    
+    // Função para formatar valores monetários
+    function formatarMoeda(valor) {
+      if (!valor) return '0,00';
+      
+      // Converte para número se for string
+      const numero = typeof valor === 'string' ? 
+        parseFloat(valor.replace('.', '').replace(',', '.')) : 
+        valor;
+      
+      return numero.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
       });
     }
     
