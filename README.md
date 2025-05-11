@@ -41,6 +41,7 @@
   
   <script>
     const historico = []; // Armazena o histórico localmente
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
     
     function consultarNota() {
       const chaveAcesso = document.getElementById('chaveAcesso').value.trim();
@@ -55,10 +56,19 @@
         return;
       }
       
-      google.script.run
-        .withSuccessHandler(processarResposta)
-        .withFailureHandler(exibirErro)
-        .consultarNotaPorChave(chaveAcesso);
+      // Mostra mensagem de carregamento
+      exibirMensagem('Consultando nota fiscal...', 'sucesso');
+      
+      // Faz a requisição para o WebApp
+      fetch(`${WEB_APP_URL}?chave=${encodeURIComponent(chaveAcesso)}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Erro na resposta do servidor');
+          }
+          return response.json();
+        })
+        .then(data => processarResposta(data))
+        .catch(error => exibirErro(error));
     }
     
     function processarResposta(dados) {
@@ -96,7 +106,7 @@
     }
     
     function exibirErro(error) {
-      exibirMensagem('Erro: ' + error.message, 'erro');
+      exibirMensagem('Erro: ' + (error.message || 'Falha na consulta'), 'erro');
     }
     
     function adicionarAoHistorico(item) {
