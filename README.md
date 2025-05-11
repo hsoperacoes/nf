@@ -81,6 +81,11 @@
             background-color: #f2f2f2;
             font-weight: bold;
         }
+        .info-item {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
         .status-valido {
             color: #3c763d;
             font-weight: bold;
@@ -158,7 +163,7 @@
             }
             
             if (chave.length !== 44) {
-                mostrarResultado("A chave deve ter exatamente 44 caracteres", "erro");
+                mostrarResultado(`A chave deve ter exatamente 44 caracteres (você digitou ${chave.length})`, "erro");
                 return;
             }
             
@@ -174,33 +179,61 @@
             }
         }
         
-        // Função para consultar o WebApp
+        // Função para consultar o WebApp com tratamento robusto
         async function consultarWebApp(chave) {
-            // Usando proxy para contornar CORS
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`${WEB_APP_URL}?chave=${encodeURIComponent(chave)}`)}`;
+            const url = `${WEB_APP_URL}?chave=${encodeURIComponent(chave)}`;
             
-            const response = await fetch(proxyUrl, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
+            try {
+                // Tentativa 1: Chamada direta
+                let response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                // Verifica se a resposta é JSON
+                let data;
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    // Tentativa 2: Usando proxy CORS se falhar
+                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                    response = await fetch(proxyUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    const text = await response.text();
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        throw new Error(`Resposta inválida: ${text.substring(0, 100)}`);
+                    }
                 }
-            });
-            
-            if (!response.ok) {
-                throw new Error("Erro na conexão com o servidor");
+
+                if (!response.ok) {
+                    throw new Error(data?.message || `Erro HTTP: ${response.status}`);
+                }
+
+                return data;
+                
+            } catch (error) {
+                console.error("Erro na requisição:", error);
+                throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
             }
-            
-            const data = await response.json();
-            
-            if (!data.success) {
-                throw new Error(data.message || "Erro ao consultar nota fiscal");
-            }
-            
-            return data;
         }
         
         // Processa a resposta do WebApp
         function processarResposta(data) {
+            if (!data.success) {
+                throw new Error(data.message || "Nota fiscal não encontrada");
+            }
+
             const nota = data.data;
             
             // Formata os dados para exibição
@@ -250,7 +283,7 @@
             // Adiciona ao histórico
             adicionarAoHistorico({
                 numeroNF: nota.numeroNF,
-                data: nota.data,
+                data: nota.data || new Date().toISOString(),
                 valorTotal: nota.valorTotal,
                 quantidadeItens: nota.quantidadeItens,
                 status: "VÁLIDA"
@@ -262,7 +295,7 @@
             if (!valor) return "0,00";
             const num = typeof valor === 'string' ? 
                 parseFloat(valor.replace(',', '.')) : 
-                valor;
+                Number(valor);
             return isNaN(num) ? "0,00" : num.toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
@@ -282,7 +315,7 @@
         function formatarCNPJ(cnpj) {
             if (!cnpj) return 'N/A';
             // Remove caracteres não numéricos
-            const nums = cnpj.replace(/\D/g, '');
+            const nums = cnpj.toString().replace(/\D/g, '');
             return nums.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
         }
         
