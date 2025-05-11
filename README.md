@@ -85,6 +85,13 @@
             color: #a94442;
             font-weight: bold;
         }
+        .btn-limpar {
+            background-color: #e74c3c;
+            margin-top: 15px;
+        }
+        .btn-limpar:hover {
+            background-color: #c0392b;
+        }
     </style>
 </head>
 <body>
@@ -105,27 +112,38 @@
                     <th>Valor Total</th>
                     <th>Itens</th>
                     <th>Status</th>
+                    <th>Data/Hora</th>
                 </tr>
             </thead>
             <tbody id="corpoHistorico">
                 <!-- Dados serão inseridos aqui -->
             </tbody>
         </table>
+        <button id="btnLimpar" class="btn-limpar">Limpar Histórico</button>
     </div>
 
     <script>
         // Configurações
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
-        const historico = [];
+        const HISTORICO_KEY = "historicoNotasFiscais";
+        let historico = [];
         
         // Elementos da página
         const btnConsultar = document.getElementById("btnConsultar");
+        const btnLimpar = document.getElementById("btnLimpar");
         const inputChave = document.getElementById("chaveAcesso");
         const divResultado = document.getElementById("resultado");
         const corpoHistorico = document.getElementById("corpoHistorico");
         
+        // Carrega o histórico ao iniciar
+        document.addEventListener("DOMContentLoaded", () => {
+            carregarHistorico();
+            atualizarHistorico();
+        });
+        
         // Eventos
         btnConsultar.addEventListener("click", consultarNota);
+        btnLimpar.addEventListener("click", limparHistorico);
         inputChave.addEventListener("keypress", function(e) {
             if (e.key === "Enter") consultarNota();
         });
@@ -150,6 +168,8 @@
             try {
                 const dados = await consultarWebApp(chave);
                 processarResposta(dados, chave);
+                inputChave.value = ""; // Limpa o campo após consulta
+                inputChave.focus(); // Volta o foco para o campo
             } catch (error) {
                 console.error("Erro na consulta:", error);
                 mostrarResultado("Erro: " + error.message, "erro");
@@ -200,8 +220,39 @@
                 numeroNF: nfNumero,
                 valorTotal: nota.valorTotal || 0,
                 quantidadeItens: nota.quantidadeItens || 0,
-                status: "VÁLIDA"
+                status: "VÁLIDA",
+                dataConsulta: new Date().toLocaleString()
             });
+        }
+        
+        // Funções de histórico (persistente)
+        function carregarHistorico() {
+            const historicoSalvo = localStorage.getItem(HISTORICO_KEY);
+            if (historicoSalvo) {
+                historico = JSON.parse(historicoSalvo);
+            }
+        }
+        
+        function salvarHistorico() {
+            localStorage.setItem(HISTORICO_KEY, JSON.stringify(historico));
+        }
+        
+        function adicionarAoHistorico(item) {
+            historico.unshift(item);
+            if (historico.length > 50) { // Limita a 50 registros
+                historico = historico.slice(0, 50);
+            }
+            salvarHistorico();
+            atualizarHistorico();
+        }
+        
+        function limparHistorico() {
+            if (confirm("Tem certeza que deseja limpar todo o histórico?")) {
+                historico = [];
+                salvarHistorico();
+                atualizarHistorico();
+                mostrarResultado("Histórico limpo com sucesso", "sucesso");
+            }
         }
         
         // Funções auxiliares
@@ -218,12 +269,6 @@
             divResultado.className = tipo;
         }
         
-        function adicionarAoHistorico(item) {
-            historico.unshift(item);
-            if (historico.length > 10) historico.pop();
-            atualizarHistorico();
-        }
-        
         function atualizarHistorico() {
             corpoHistorico.innerHTML = historico.map(item => `
                 <tr>
@@ -233,6 +278,7 @@
                     <td class="${item.status === 'VÁLIDA' ? 'status-valido' : 'status-invalido'}">
                         ${item.status}
                     </td>
+                    <td>${item.dataConsulta || new Date().toLocaleString()}</td>
                 </tr>
             `).join('');
         }
@@ -242,7 +288,8 @@
                 numeroNF: chave.substring(25, 34) || 'ERRO',
                 valorTotal: 0,
                 quantidadeItens: 0,
-                status: "ERRO"
+                status: "ERRO",
+                dataConsulta: new Date().toLocaleString()
             });
         }
     </script>
