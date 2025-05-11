@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -15,13 +15,27 @@
         h1 {
             color: #2c3e50;
             text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
         }
         input, button {
-            padding: 10px;
+            padding: 12px;
             font-size: 16px;
             width: 100%;
             box-sizing: border-box;
-            margin-bottom: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
@@ -30,73 +44,91 @@
             color: white;
             border: none;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
         button:hover {
             background-color: #2980b9;
         }
         #resultado {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
+            margin-top: 30px;
+            padding: 20px;
             border-radius: 5px;
             background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .sucesso {
             background-color: #dff0d8;
-            border-color: #d6e9c6;
+            border-left: 4px solid #3c763d;
         }
         .erro {
             background-color: #f2dede;
-            border-color: #ebccd1;
+            border-left: 4px solid #a94442;
         }
-        #historico {
-            margin-top: 30px;
+        .detalhes-nf {
+            margin-top: 20px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
         }
         th, td {
-            padding: 8px;
+            padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
         th {
             background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .status-valido {
+            color: #3c763d;
+            font-weight: bold;
+        }
+        .status-invalido {
+            color: #a94442;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <h1>Consulta de Nota Fiscal</h1>
-    
-    <input type="text" id="chaveAcesso" placeholder="Digite a chave de acesso (44 caracteres)" autofocus>
-    <button id="btnConsultar">Consultar</button>
-    
-    <div id="resultado">
-        Digite a chave de acesso e clique em Consultar
-    </div>
-    
-    <div id="historico">
-        <h2>Histórico de Consultas</h2>
-        <table id="tabelaHistorico">
-            <thead>
-                <tr>
-                    <th>Número NF</th>
-                    <th>Quantidade</th>
-                    <th>Valor Total</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="corpoHistorico">
-                <!-- Dados serão inseridos aqui -->
-            </tbody>
-        </table>
+    <div class="container">
+        <h1>Consulta de Nota Fiscal</h1>
+        
+        <div class="input-group">
+            <label for="chaveAcesso">Chave de Acesso (44 caracteres):</label>
+            <input type="text" id="chaveAcesso" placeholder="Digite a chave de acesso completa" autofocus>
+        </div>
+        
+        <button id="btnConsultar">Consultar Nota Fiscal</button>
+        
+        <div id="resultado">
+            <p>Informe a chave de acesso da nota fiscal para consultar.</p>
+        </div>
+        
+        <div class="detalhes-nf" id="detalhesNF" style="display: none;">
+            <h2>Detalhes da Nota Fiscal</h2>
+            <div id="dadosNF"></div>
+            
+            <h2>Histórico de Consultas</h2>
+            <table id="tabelaHistorico">
+                <thead>
+                    <tr>
+                        <th>Número NF</th>
+                        <th>Data</th>
+                        <th>Valor Total</th>
+                        <th>Itens</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoHistorico">
+                    <!-- Dados serão inseridos aqui -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
-        // Verificação inicial
-        console.log("Sistema iniciado");
-        
         // Configurações
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
         const historico = [];
@@ -105,6 +137,8 @@
         const btnConsultar = document.getElementById("btnConsultar");
         const inputChave = document.getElementById("chaveAcesso");
         const divResultado = document.getElementById("resultado");
+        const divDetalhesNF = document.getElementById("detalhesNF");
+        const divDadosNF = document.getElementById("dadosNF");
         const corpoHistorico = document.getElementById("corpoHistorico");
         
         // Eventos
@@ -117,78 +151,144 @@
         async function consultarNota() {
             const chave = inputChave.value.trim();
             
+            // Validação básica
             if (!chave) {
-                mostrarResultado("Digite uma chave de acesso", "erro");
+                mostrarResultado("Por favor, digite uma chave de acesso", "erro");
                 return;
             }
             
             if (chave.length !== 44) {
-                mostrarResultado("A chave deve ter 44 caracteres", "erro");
+                mostrarResultado("A chave deve ter exatamente 44 caracteres", "erro");
                 return;
             }
             
-            mostrarResultado("Consultando...", "sucesso");
+            mostrarResultado("Consultando nota fiscal...", "sucesso");
             
             try {
-                // Dados simulados - REMOVA QUANDO FOR USAR O WEBAPP REAL
-                const dadosSimulados = {
-                    success: true,
-                    data: {
-                        numeroNF: chave.substring(25, 34),
-                        totalItens: "15",
-                        valorTotal: "1250,50",
-                        status: "VÁLIDA"
-                    }
-                };
-                
-                processarResposta(dadosSimulados);
-                
-                // Para usar o WebApp real, descomente:
-                // const dados = await consultarWebApp(chave);
-                // processarResposta(dados);
-                
+                const dados = await consultarWebApp(chave);
+                processarResposta(dados);
             } catch (error) {
-                console.error("Erro:", error);
-                mostrarResultado("Erro na consulta", "erro");
-                registrarErroNoHistorico(error);
+                console.error("Erro na consulta:", error);
+                mostrarResultado("Erro na consulta: " + error.message, "erro");
+                registrarErroNoHistorico(error, chave);
             }
         }
         
-        // Função para consultar o WebApp (DESCOMENTE QUANDO FOR USAR)
-        /*
+        // Função para consultar o WebApp
         async function consultarWebApp(chave) {
-            const response = await fetch(`${WEB_APP_URL}?chave=${encodeURIComponent(chave)}`);
+            // Usando proxy para contornar CORS
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`${WEB_APP_URL}?chave=${encodeURIComponent(chave)}`)}`;
+            
+            const response = await fetch(proxyUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
             
             if (!response.ok) {
-                throw new Error("Erro na resposta");
+                throw new Error("Erro na conexão com o servidor");
             }
             
-            return await response.json();
-        }
-        */
-        
-        function processarResposta(data) {
+            const data = await response.json();
+            
             if (!data.success) {
-                throw new Error(data.message || "Erro no servidor");
+                throw new Error(data.message || "Erro ao consultar nota fiscal");
             }
             
-            const nota = {
-                numeroNF: data.data.numeroNF || "N/A",
-                totalItens: data.data.totalItens || "0",
-                valorTotal: formatarMoeda(data.data.valorTotal) || "0,00",
-                status: data.data.status || "VÁLIDA"
-            };
-            
-            adicionarAoHistorico(nota);
-            mostrarResultado(
-                `NF ${nota.numeroNF}: ${nota.totalItens} itens (R$ ${nota.valorTotal})`,
-                nota.status === "VÁLIDA" ? "sucesso" : "erro"
-            );
+            return data;
         }
         
+        // Processa a resposta do WebApp
+        function processarResposta(data) {
+            const nota = data.data;
+            
+            // Formata os dados para exibição
+            const htmlDetalhes = `
+                <div class="info-item">
+                    <strong>Filial:</strong> ${nota.filial || 'N/A'}
+                </div>
+                <div class="info-item">
+                    <strong>Número NF:</strong> ${nota.numeroNF || 'N/A'}
+                </div>
+                <div class="info-item">
+                    <strong>Data:</strong> ${formatarData(nota.data) || 'N/A'}
+                </div>
+                <div class="info-item">
+                    <strong>Razão Social:</strong> ${nota.razaoSocial || 'N/A'}
+                </div>
+                <div class="info-item">
+                    <strong>CNPJ Remetente:</strong> ${formatarCNPJ(nota.cnpjRemetente) || 'N/A'}
+                </div>
+                <div class="info-item">
+                    <strong>CFOP:</strong> ${nota.cfop || 'N/A'}
+                </div>
+                <div class="info-item">
+                    <strong>Quantidade de Itens:</strong> ${nota.quantidadeItens || '0'}
+                </div>
+                <div class="info-item">
+                    <strong>Valor Total:</strong> R$ ${formatarMoeda(nota.valorTotal) || '0,00'}
+                </div>
+                <div class="info-item">
+                    <strong>Código Peça:</strong> ${nota.codPeca || 'N/A'}
+                </div>
+                <div class="info-item">
+                    <strong>Cor Peça:</strong> ${nota.corPeca || 'N/A'}
+                </div>
+                <div class="info-item">
+                    <strong>Valor Unitário:</strong> R$ ${formatarMoeda(nota.valorUnitario) || '0,00'}
+                </div>
+                <div class="info-item">
+                    <strong>Chave de Acesso:</strong> ${nota.chaveAcesso || 'N/A'}
+                </div>
+            `;
+            
+            divDadosNF.innerHTML = htmlDetalhes;
+            mostrarResultado("Nota fiscal encontrada com sucesso!", "sucesso");
+            divDetalhesNF.style.display = "block";
+            
+            // Adiciona ao histórico
+            adicionarAoHistorico({
+                numeroNF: nota.numeroNF,
+                data: nota.data,
+                valorTotal: nota.valorTotal,
+                quantidadeItens: nota.quantidadeItens,
+                status: "VÁLIDA"
+            });
+        }
+        
+        // Funções auxiliares
         function formatarMoeda(valor) {
-            const num = Number(valor.toString().replace(",", ".")) || 0;
-            return num.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+            if (!valor) return "0,00";
+            const num = typeof valor === 'string' ? 
+                parseFloat(valor.replace(',', '.')) : 
+                valor;
+            return isNaN(num) ? "0,00" : num.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        
+        function formatarData(dataString) {
+            if (!dataString) return 'N/A';
+            try {
+                const data = new Date(dataString);
+                return data.toLocaleDateString('pt-BR');
+            } catch {
+                return dataString;
+            }
+        }
+        
+        function formatarCNPJ(cnpj) {
+            if (!cnpj) return 'N/A';
+            // Remove caracteres não numéricos
+            const nums = cnpj.replace(/\D/g, '');
+            return nums.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+        }
+        
+        function mostrarResultado(mensagem, tipo) {
+            divResultado.innerHTML = `<p>${mensagem}</p>`;
+            divResultado.className = tipo;
         }
         
         function adicionarAoHistorico(item) {
@@ -200,25 +300,24 @@
         function atualizarHistorico() {
             corpoHistorico.innerHTML = historico.map(item => `
                 <tr>
-                    <td>${item.numeroNF}</td>
-                    <td>${item.totalItens}</td>
-                    <td>R$ ${item.valorTotal}</td>
-                    <td class="${item.status === "VÁLIDA" ? "sucesso" : "erro"}">${item.status}</td>
+                    <td>${item.numeroNF || 'N/A'}</td>
+                    <td>${formatarData(item.data) || 'N/A'}</td>
+                    <td>R$ ${formatarMoeda(item.valorTotal) || '0,00'}</td>
+                    <td>${item.quantidadeItens || '0'}</td>
+                    <td class="${item.status === 'VÁLIDA' ? 'status-valido' : 'status-invalido'}">
+                        ${item.status || 'N/A'}
+                    </td>
                 </tr>
-            `).join("");
+            `).join('');
         }
         
-        function mostrarResultado(mensagem, tipo) {
-            divResultado.textContent = mensagem;
-            divResultado.className = tipo;
-        }
-        
-        function registrarErroNoHistorico(error) {
+        function registrarErroNoHistorico(error, chave) {
             adicionarAoHistorico({
-                numeroNF: "ERRO",
-                totalItens: "0",
+                numeroNF: chave.substring(25, 34) || 'ERRO',
+                data: new Date().toISOString(),
                 valorTotal: "0,00",
-                status: error.message.substring(0, 20)
+                quantidadeItens: "0",
+                status: "ERRO: " + error.message.substring(0, 20)
             });
         }
     </script>
