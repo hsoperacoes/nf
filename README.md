@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 1000px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -15,27 +15,20 @@
         h1 {
             color: #2c3e50;
             text-align: center;
-            margin-bottom: 30px;
-        }
-        .container {
-            background-color: white;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .input-group {
             margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         input, button {
             padding: 12px;
             font-size: 16px;
             width: 100%;
             box-sizing: border-box;
+            margin-bottom: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
@@ -50,27 +43,30 @@
             background-color: #2980b9;
         }
         #resultado {
-            margin-top: 30px;
-            padding: 20px;
+            margin-top: 15px;
+            padding: 15px;
             border-radius: 5px;
-            background-color: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
         }
         .sucesso {
             background-color: #dff0d8;
-            border-left: 4px solid #3c763d;
+            color: #3c763d;
         }
         .erro {
             background-color: #f2dede;
-            border-left: 4px solid #a94442;
+            color: #a94442;
         }
-        .detalhes-nf {
-            margin-top: 20px;
+        #historico {
+            margin-top: 30px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 15px;
         }
         th, td {
             padding: 12px;
@@ -80,11 +76,6 @@
         th {
             background-color: #f2f2f2;
             font-weight: bold;
-        }
-        .info-item {
-            margin-bottom: 10px;
-            padding: 8px;
-            border-bottom: 1px solid #eee;
         }
         .status-valido {
             color: #3c763d;
@@ -97,40 +88,29 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Consulta de Nota Fiscal</h1>
-        
-        <div class="input-group">
-            <label for="chaveAcesso">Chave de Acesso (44 caracteres):</label>
-            <input type="text" id="chaveAcesso" placeholder="Digite a chave de acesso completa" autofocus>
-        </div>
-        
-        <button id="btnConsultar">Consultar Nota Fiscal</button>
-        
-        <div id="resultado">
-            <p>Informe a chave de acesso da nota fiscal para consultar.</p>
-        </div>
-        
-        <div class="detalhes-nf" id="detalhesNF" style="display: none;">
-            <h2>Detalhes da Nota Fiscal</h2>
-            <div id="dadosNF"></div>
-            
-            <h2>Histórico de Consultas</h2>
-            <table id="tabelaHistorico">
-                <thead>
-                    <tr>
-                        <th>Número NF</th>
-                        <th>Data</th>
-                        <th>Valor Total</th>
-                        <th>Itens</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="corpoHistorico">
-                    <!-- Dados serão inseridos aqui -->
-                </tbody>
-            </table>
-        </div>
+    <h1>Consulta de Nota Fiscal</h1>
+    
+    <div class="input-group">
+        <input type="text" id="chaveAcesso" placeholder="Digite a chave de acesso (44 caracteres)" autofocus>
+        <button id="btnConsultar">Consultar</button>
+        <div id="resultado">Digite a chave e clique em Consultar</div>
+    </div>
+    
+    <div id="historico">
+        <h2>Histórico de Consultas</h2>
+        <table id="tabelaHistorico">
+            <thead>
+                <tr>
+                    <th>Número NF</th>
+                    <th>Valor Total</th>
+                    <th>Itens</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="corpoHistorico">
+                <!-- Dados serão inseridos aqui -->
+            </tbody>
+        </table>
     </div>
 
     <script>
@@ -142,8 +122,6 @@
         const btnConsultar = document.getElementById("btnConsultar");
         const inputChave = document.getElementById("chaveAcesso");
         const divResultado = document.getElementById("resultado");
-        const divDetalhesNF = document.getElementById("detalhesNF");
-        const divDadosNF = document.getElementById("dadosNF");
         const corpoHistorico = document.getElementById("corpoHistorico");
         
         // Eventos
@@ -163,7 +141,7 @@
             }
             
             if (chave.length !== 44) {
-                mostrarResultado(`A chave deve ter exatamente 44 caracteres (você digitou ${chave.length})`, "erro");
+                mostrarResultado(`A chave deve ter 44 caracteres (digitados: ${chave.length})`, "erro");
                 return;
             }
             
@@ -171,156 +149,72 @@
             
             try {
                 const dados = await consultarWebApp(chave);
-                processarResposta(dados);
+                processarResposta(dados, chave);
             } catch (error) {
                 console.error("Erro na consulta:", error);
-                mostrarResultado("Erro na consulta: " + error.message, "erro");
+                mostrarResultado("Erro: " + error.message, "erro");
                 registrarErroNoHistorico(error, chave);
             }
         }
         
-        // Função para consultar o WebApp com tratamento robusto
+        // Função para consultar o WebApp
         async function consultarWebApp(chave) {
             const url = `${WEB_APP_URL}?chave=${encodeURIComponent(chave)}`;
             
             try {
                 // Tentativa 1: Chamada direta
-                let response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-
-                // Verifica se a resposta é JSON
-                let data;
-                const contentType = response.headers.get('content-type');
+                let response = await fetch(url);
                 
-                if (contentType && contentType.includes('application/json')) {
-                    data = await response.json();
-                } else {
-                    // Tentativa 2: Usando proxy CORS se falhar
-                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                    response = await fetch(proxyUrl, {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    });
-                    
-                    const text = await response.text();
-                    try {
-                        data = JSON.parse(text);
-                    } catch (e) {
-                        throw new Error(`Resposta inválida: ${text.substring(0, 100)}`);
-                    }
-                }
-
+                // Se falhar, tentativa 2 com proxy
                 if (!response.ok) {
-                    throw new Error(data?.message || `Erro HTTP: ${response.status}`);
+                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                    response = await fetch(proxyUrl);
                 }
-
+                
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                
+                const data = await response.json();
                 return data;
                 
             } catch (error) {
                 console.error("Erro na requisição:", error);
-                throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
+                throw new Error("Falha na comunicação com o servidor");
             }
         }
         
         // Processa a resposta do WebApp
-        function processarResposta(data) {
+        function processarResposta(data, chave) {
             if (!data.success) {
                 throw new Error(data.message || "Nota fiscal não encontrada");
             }
 
             const nota = data.data;
+            const nfNumero = nota.numeroNF || chave.substring(25, 34) || 'N/A';
             
-            // Formata os dados para exibição
-            const htmlDetalhes = `
-                <div class="info-item">
-                    <strong>Filial:</strong> ${nota.filial || 'N/A'}
-                </div>
-                <div class="info-item">
-                    <strong>Número NF:</strong> ${nota.numeroNF || 'N/A'}
-                </div>
-                <div class="info-item">
-                    <strong>Data:</strong> ${formatarData(nota.data) || 'N/A'}
-                </div>
-                <div class="info-item">
-                    <strong>Razão Social:</strong> ${nota.razaoSocial || 'N/A'}
-                </div>
-                <div class="info-item">
-                    <strong>CNPJ Remetente:</strong> ${formatarCNPJ(nota.cnpjRemetente) || 'N/A'}
-                </div>
-                <div class="info-item">
-                    <strong>CFOP:</strong> ${nota.cfop || 'N/A'}
-                </div>
-                <div class="info-item">
-                    <strong>Quantidade de Itens:</strong> ${nota.quantidadeItens || '0'}
-                </div>
-                <div class="info-item">
-                    <strong>Valor Total:</strong> R$ ${formatarMoeda(nota.valorTotal) || '0,00'}
-                </div>
-                <div class="info-item">
-                    <strong>Código Peça:</strong> ${nota.codPeca || 'N/A'}
-                </div>
-                <div class="info-item">
-                    <strong>Cor Peça:</strong> ${nota.corPeca || 'N/A'}
-                </div>
-                <div class="info-item">
-                    <strong>Valor Unitário:</strong> R$ ${formatarMoeda(nota.valorUnitario) || '0,00'}
-                </div>
-                <div class="info-item">
-                    <strong>Chave de Acesso:</strong> ${nota.chaveAcesso || 'N/A'}
-                </div>
-            `;
-            
-            divDadosNF.innerHTML = htmlDetalhes;
-            mostrarResultado("Nota fiscal encontrada com sucesso!", "sucesso");
-            divDetalhesNF.style.display = "block";
+            mostrarResultado(`NF ${nfNumero} consultada com sucesso!`, "sucesso");
             
             // Adiciona ao histórico
             adicionarAoHistorico({
-                numeroNF: nota.numeroNF,
-                data: nota.data || new Date().toISOString(),
-                valorTotal: nota.valorTotal,
-                quantidadeItens: nota.quantidadeItens,
+                numeroNF: nfNumero,
+                valorTotal: nota.valorTotal || 0,
+                quantidadeItens: nota.quantidadeItens || 0,
                 status: "VÁLIDA"
             });
         }
         
         // Funções auxiliares
         function formatarMoeda(valor) {
-            if (!valor) return "0,00";
-            const num = typeof valor === 'string' ? 
-                parseFloat(valor.replace(',', '.')) : 
-                Number(valor);
-            return isNaN(num) ? "0,00" : num.toLocaleString('pt-BR', {
+            const num = Number(valor) || 0;
+            return num.toLocaleString('pt-BR', { 
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
         }
         
-        function formatarData(dataString) {
-            if (!dataString) return 'N/A';
-            try {
-                const data = new Date(dataString);
-                return data.toLocaleDateString('pt-BR');
-            } catch {
-                return dataString;
-            }
-        }
-        
-        function formatarCNPJ(cnpj) {
-            if (!cnpj) return 'N/A';
-            // Remove caracteres não numéricos
-            const nums = cnpj.toString().replace(/\D/g, '');
-            return nums.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
-        }
-        
         function mostrarResultado(mensagem, tipo) {
-            divResultado.innerHTML = `<p>${mensagem}</p>`;
+            divResultado.textContent = mensagem;
             divResultado.className = tipo;
         }
         
@@ -333,12 +227,11 @@
         function atualizarHistorico() {
             corpoHistorico.innerHTML = historico.map(item => `
                 <tr>
-                    <td>${item.numeroNF || 'N/A'}</td>
-                    <td>${formatarData(item.data) || 'N/A'}</td>
-                    <td>R$ ${formatarMoeda(item.valorTotal) || '0,00'}</td>
-                    <td>${item.quantidadeItens || '0'}</td>
+                    <td>${item.numeroNF}</td>
+                    <td>R$ ${formatarMoeda(item.valorTotal)}</td>
+                    <td>${item.quantidadeItens}</td>
                     <td class="${item.status === 'VÁLIDA' ? 'status-valido' : 'status-invalido'}">
-                        ${item.status || 'N/A'}
+                        ${item.status}
                     </td>
                 </tr>
             `).join('');
@@ -347,10 +240,9 @@
         function registrarErroNoHistorico(error, chave) {
             adicionarAoHistorico({
                 numeroNF: chave.substring(25, 34) || 'ERRO',
-                data: new Date().toISOString(),
-                valorTotal: "0,00",
-                quantidadeItens: "0",
-                status: "ERRO: " + error.message.substring(0, 20)
+                valorTotal: 0,
+                quantidadeItens: 0,
+                status: "ERRO"
             });
         }
     </script>
