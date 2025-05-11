@@ -92,6 +92,10 @@
         .btn-limpar:hover {
             background-color: #c0392b;
         }
+        #senhaContainer {
+            display: none;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -120,20 +124,28 @@
             </tbody>
         </table>
         <button id="btnLimpar" class="btn-limpar">Limpar Histórico</button>
+        <div id="senhaContainer">
+            <input type="password" id="senhaLimpar" placeholder="Digite a senha para limpar">
+            <button id="btnConfirmarLimpeza">Confirmar</button>
+        </div>
     </div>
 
     <script>
         // Configurações
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
         const HISTORICO_KEY = "historicoNotasFiscais";
+        const SENHA_LIMPEZA = "hs"; // Senha para limpar o histórico
         let historico = [];
         
         // Elementos da página
         const btnConsultar = document.getElementById("btnConsultar");
         const btnLimpar = document.getElementById("btnLimpar");
+        const btnConfirmar = document.getElementById("btnConfirmarLimpeza");
         const inputChave = document.getElementById("chaveAcesso");
+        const inputSenha = document.getElementById("senhaLimpar");
         const divResultado = document.getElementById("resultado");
         const corpoHistorico = document.getElementById("corpoHistorico");
+        const divSenhaContainer = document.getElementById("senhaContainer");
         
         // Carrega o histórico ao iniciar
         document.addEventListener("DOMContentLoaded", () => {
@@ -143,7 +155,8 @@
         
         // Eventos
         btnConsultar.addEventListener("click", consultarNota);
-        btnLimpar.addEventListener("click", limparHistorico);
+        btnLimpar.addEventListener("click", mostrarCampoSenha);
+        btnConfirmar.addEventListener("click", limparHistorico);
         inputChave.addEventListener("keypress", function(e) {
             if (e.key === "Enter") consultarNota();
         });
@@ -163,6 +176,14 @@
                 return;
             }
             
+            // Verifica se a chave já foi consultada recentemente
+            if (chaveJaConsultada(chave)) {
+                mostrarResultado("Esta chave já foi consultada recentemente", "erro");
+                inputChave.value = "";
+                inputChave.focus();
+                return;
+            }
+            
             mostrarResultado("Consultando nota fiscal...", "sucesso");
             
             try {
@@ -175,6 +196,14 @@
                 mostrarResultado("Erro: " + error.message, "erro");
                 registrarErroNoHistorico(error, chave);
             }
+        }
+        
+        // Verifica se a chave já foi consultada
+        function chaveJaConsultada(chave) {
+            return historico.some(item => 
+                item.chaveOriginal === chave || 
+                (item.numeroNF && item.numeroNF === chave.substring(25, 34))
+            );
         }
         
         // Função para consultar o WebApp
@@ -221,8 +250,15 @@
                 valorTotal: nota.valorTotal || 0,
                 quantidadeItens: nota.quantidadeItens || 0,
                 status: "VÁLIDA",
-                dataConsulta: new Date().toLocaleString()
+                dataConsulta: new Date().toLocaleString(),
+                chaveOriginal: chave // Armazena a chave original para evitar duplicatas
             });
+        }
+        
+        // Mostra campo de senha para limpeza
+        function mostrarCampoSenha() {
+            divSenhaContainer.style.display = "block";
+            inputSenha.focus();
         }
         
         // Funções de histórico (persistente)
@@ -247,12 +283,20 @@
         }
         
         function limparHistorico() {
-            if (confirm("Tem certeza que deseja limpar todo o histórico?")) {
-                historico = [];
-                salvarHistorico();
-                atualizarHistorico();
-                mostrarResultado("Histórico limpo com sucesso", "sucesso");
+            const senhaDigitada = inputSenha.value.trim();
+            
+            if (senhaDigitada !== SENHA_LIMPEZA) {
+                mostrarResultado("Senha incorreta", "erro");
+                inputSenha.value = "";
+                return;
             }
+            
+            historico = [];
+            salvarHistorico();
+            atualizarHistorico();
+            divSenhaContainer.style.display = "none";
+            inputSenha.value = "";
+            mostrarResultado("Histórico limpo com sucesso", "sucesso");
         }
         
         // Funções auxiliares
@@ -289,7 +333,8 @@
                 valorTotal: 0,
                 quantidadeItens: 0,
                 status: "ERRO",
-                dataConsulta: new Date().toLocaleString()
+                dataConsulta: new Date().toLocaleString(),
+                chaveOriginal: chave
             });
         }
     </script>
