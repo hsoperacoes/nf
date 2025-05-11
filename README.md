@@ -1,64 +1,38 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <base target="_top">
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
-    input, button { padding: 10px; font-size: 16px; width: 100%; box-sizing: border-box; }
-    #resultado { margin-top: 20px; padding: 15px; border: 1px solid #ddd; }
-    .sucesso { background-color: #dff0d8; }
-    .erro { background-color: #f2dede; }
-  </style>
-</head>
-<body>
-  <h1>Registro de Entrada de Mercadoria</h1>
-  <input type="text" id="codigoBarras" placeholder="Leia o código de barras ou digite o número da NF" autofocus>
-  <div id="resultado"></div>
+function consultarNotaPorChave(chaveAcesso) {
+  const spreadsheetId = '1R1Hq4kp7eaf9XfEVNCNFpUFjz3eLFcWqNl6QQx-QAew';
+  const sheetName = 'ARTUR';
+  const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  const planilha = spreadsheet.getSheetByName(sheetName);
   
-  <script>
-    document.getElementById('codigoBarras').addEventListener('change', buscarNota);
-    
-    function buscarNota() {
-      const codigo = document.getElementById('codigoBarras').value.trim();
-      if (!codigo) return;
-      
-      google.script.run
-        .withSuccessHandler(exibirResultado)
-        .withFailureHandler(exibirErro)
-        .buscarNotaPorCodigo(codigo);
+  if (!planilha || planilha.getLastRow() < 2) {
+    return { valido: false };
+  }
+  
+  const dados = planilha.getDataRange().getValues();
+  const cabecalhos = dados[0];
+  
+  // Encontra os índices das colunas necessárias
+  const idxChave = cabecalhos.indexOf('Chave Acesso (44)');
+  const idxNumeroNF = cabecalhos.indexOf('Número NF');
+  const idxTotalItens = cabecalhos.indexOf('Total Itens NF');
+  const idxValorTotal = cabecalhos.indexOf('Valor Total NF');
+  
+  if (idxChave === -1 || idxNumeroNF === -1 || idxTotalItens === -1 || idxValorTotal === -1) {
+    throw new Error('Estrutura da planilha não encontrada');
+  }
+  
+  // Pula o cabeçalho
+  for (let i = 1; i < dados.length; i++) {
+    const linha = dados[i];
+    if (linha[idxChave] === chaveAcesso) {
+      return {
+        valido: true,
+        numeroNF: linha[idxNumeroNF],
+        totalItens: linha[idxTotalItens],
+        valorTotal: linha[idxValorTotal]
+      };
     }
-    
-    function exibirResultado(dados) {
-      const div = document.getElementById('resultado');
-      if (dados && dados.length > 0) {
-        div.innerHTML = `
-          <h3>Nota Fiscal ${dados[0].numeroNF} - ${dados[0].filial}</h3>
-          <p>Emitente: ${dados[0].emitente}</p>
-          <p>Itens: ${dados.length}</p>
-          <button onclick="registrarEntrada('${dados[0].chaveUnica}')">Registrar Entrada</button>
-        `;
-        div.className = 'sucesso';
-      } else {
-        div.innerHTML = 'Nota fiscal não encontrada no banco de dados';
-        div.className = 'erro';
-      }
-      document.getElementById('codigoBarras').value = '';
-      document.getElementById('codigoBarras').focus();
-    }
-    
-    function exibirErro(error) {
-      document.getElementById('resultado').innerHTML = 'Erro: ' + error.message;
-      document.getElementById('resultado').className = 'erro';
-    }
-    
-    function registrarEntrada(chaveUnica) {
-      google.script.run
-        .withSuccessHandler(() => {
-          document.getElementById('resultado').innerHTML = 'Entrada registrada com sucesso!';
-          document.getElementById('resultado').className = 'sucesso';
-        })
-        .registrarEntrada(chaveUnica);
-    }
-  </script>
-</body>
-</html>
+  }
+  
+  return { valido: false };
+}
