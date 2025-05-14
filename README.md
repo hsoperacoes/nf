@@ -14,7 +14,7 @@
     }
 
     .container {
-      max-width: 500px;
+      max-width: 800px; /* AUMENTEI A LARGURA */
       margin: 0 auto;
       background-color: #1e1e1e;
       padding: 30px;
@@ -22,9 +22,8 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
 
-    h2 {
+    h2, h3 {
       text-align: center;
-      margin-bottom: 30px;
     }
 
     label {
@@ -158,12 +157,17 @@
             carregarHistorico(filial);
           } else {
             erro.innerText = data.message || 'Erro ao buscar nota fiscal.';
-            carregarHistorico(filial); // mesmo em caso de erro, atualiza histórico
+            carregarHistorico(filial);
           }
         })
         .catch(() => {
           erro.innerText = 'Erro de comunicação com o servidor.';
         });
+    }
+
+    function formatarDataBr(iso) {
+      const dt = new Date(iso);
+      return dt.toLocaleDateString('pt-BR');
     }
 
     function carregarHistorico(filial) {
@@ -176,8 +180,13 @@
           if (data.success && data.data.length > 0) {
             historicoLista.innerHTML = '';
             data.data.forEach(registro => {
+              const dataFormatada = formatarDataBr(registro.dataHora);
+              const numeroNF = registro.numeroNF || '-';
+              const qtd = registro.quantidade || '-';
+              const status = registro.status || '---';
+
               historicoLista.innerHTML += `
-                <li>${registro.dataHora} - ${registro.valorTotal || '-'} - ${registro.quantidade || '-'} - ${registro.status}</li>
+                <li>${dataFormatada} - NF ${numeroNF} - ${qtd} itens - ${status}</li>
               `;
             });
           } else {
