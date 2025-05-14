@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Consulta de NF</title>
+  <title>Consulta de Nota Fiscal</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -66,6 +66,7 @@
 </head>
 <body>
   <h1>Consulta de Nota Fiscal</h1>
+  <p><strong>⚠️ Importante:</strong> abra este arquivo em um servidor local (ex: http://localhost:8000). Não use <code>file://</code> diretamente ou a consulta não funcionará.</p>
 
   <input type="text" id="inputChave" placeholder="Digite a chave de 44 dígitos" maxlength="44"/>
   <button onclick="consultarNota()">Consultar</button>
@@ -94,7 +95,8 @@
   </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec"; // Substitua pela sua URL real
+    // ✅ SUA URL DO WEB APP CORRETAMENTE INSERIDA
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
     const HISTORICO_KEY = "historicoConsultasNF";
     const SENHA_LIMPEZA = "hs2024";
 
