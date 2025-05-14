@@ -202,7 +202,7 @@
 
         tr.innerHTML = `
           <td>${item.numeroNF}</td>
-          <td>R$ ${item.valorTotal}</td>
+          <td>${item.valorTotal}</td>
           <td>${item.quantidadeItens}</td>
           <td class="${item.status === "Válido" ? "status-valido" : "status-invalido"}">${item.status}</td>
           <td>${item.dataHora}</td>
