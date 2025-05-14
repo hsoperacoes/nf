@@ -94,7 +94,7 @@
   </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxiyP5_rQoP_p5FQUZ4UqjPckE2FlzD4btXtGBF7pK8SxnFvwlOiVDcBD3P0f-epylf/exec"; // Substitua pela sua URL real
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec"; // Substitua pela sua URL real
     const HISTORICO_KEY = "historicoConsultasNF";
     const SENHA_LIMPEZA = "hs2024";
 
