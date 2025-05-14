@@ -70,6 +70,7 @@
 <body>
   <div class="container">
     <h2>Consulta de Nota Fiscal</h2>
+
     <label for="codigo">Código da Filial</label>
     <input type="text" id="codigo" placeholder="Ex: 293 ou 488" />
 
@@ -84,7 +85,7 @@
 
   <script>
     function consultarNota() {
-      const codigo = document.getElementById('codigo').value.trim();
+      const filial = document.getElementById('codigo').value.trim();
       const chave = document.getElementById('chave').value.trim();
       const resultado = document.getElementById('resultado');
       const erro = document.getElementById('erro');
@@ -92,22 +93,23 @@
       resultado.style.display = 'none';
       erro.innerText = '';
 
-      if (!codigo || !chave || chave.length !== 44) {
+      if (!filial || !chave || chave.length !== 44) {
         erro.innerText = 'Preencha corretamente o código da filial e a chave com 44 dígitos.';
         return;
       }
 
-      fetch(`https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec?chave=${chave}&codigo=${codigo}`)
+      fetch(`https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec?chave=${chave}&filial=${filial}`)
         .then(res => res.json())
         .then(data => {
-          if (data.sucesso) {
+          if (data.success) {
             resultado.style.display = 'block';
             resultado.innerHTML = `
-              <p><strong>Quantidade de Itens:</strong> ${data.qtd}</p>
-              <p><strong>Valor Total:</strong> R$ ${data.total}</p>
+              <p><strong>Número NF:</strong> ${data.data.numeroNF}</p>
+              <p><strong>Quantidade de Itens:</strong> ${data.data.quantidadeTotal}</p>
+              <p><strong>Valor Total:</strong> ${data.data.valorTotal}</p>
             `;
           } else {
-            erro.innerText = data.mensagem || 'Erro ao buscar nota fiscal.';
+            erro.innerText = data.message || 'Erro ao buscar nota fiscal.';
           }
         })
         .catch(() => {
