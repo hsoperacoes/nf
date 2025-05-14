@@ -114,16 +114,14 @@
         return;
       }
 
+      if (historico.some(nf => nf.chaveOriginal === chave)) {
+        mostrarResultado("Esta chave já foi consultada.", "erro");
+        return;
+      }
+
       try {
         const data = await consultarWebApp(chave);
-
-        if (data.mensagemJaConsultada) {
-          mostrarResultado(data.mensagemJaConsultada, "erro");
-          return;
-        }
-
         processarResposta(data, chave);
-
       } catch (error) {
         mostrarResultado(error.message, "erro");
         registrarErroNoHistorico(error, chave);
@@ -141,9 +139,6 @@
       const json = await response.json();
 
       if (!json.success) {
-        if (json.message && json.message.includes("já foi consultada")) {
-          return { mensagemJaConsultada: json.message };
-        }
         throw new Error(json.message || "Nota fiscal inválida ou não encontrada");
       }
 
@@ -155,15 +150,14 @@
 
       const novaEntrada = {
         numeroNF: data.numeroNF || 'N/A',
-        valorTotal: data.valorTotal || '0,00',
+        valorTotal: data.valorTotal || 'R$0,00',
         quantidadeItens: data.quantidadeTotal || '0',
         status: "Válido",
         dataHora: data.dataRegistro,
         chaveOriginal: chaveOriginal
       };
 
-      // Coloca no topo da lista
-      historico.unshift(novaEntrada);
+      historico.unshift(novaEntrada); // adiciona no início
       salvarHistorico();
       atualizarHistorico();
     }
@@ -171,7 +165,7 @@
     function registrarErroNoHistorico(error, chaveOriginal) {
       historico.unshift({
         numeroNF: "",
-        valorTotal: "0,00",
+        valorTotal: "R$0,00",
         quantidadeItens: "0",
         status: "Erro",
         dataHora: new Date().toLocaleString('pt-BR'),
@@ -200,7 +194,6 @@
 
       historico.forEach(item => {
         const tr = document.createElement("tr");
-
         tr.innerHTML = `
           <td>${item.numeroNF}</td>
           <td>${item.valorTotal}</td>
@@ -208,7 +201,6 @@
           <td class="${item.status === "Válido" ? "status-valido" : "status-invalido"}">${item.status}</td>
           <td>${item.dataHora}</td>
         `;
-
         corpoHistorico.appendChild(tr);
       });
     }
@@ -220,7 +212,6 @@
 
     function limparHistorico() {
       const senha = inputSenha.value.trim();
-
       if (senha !== SENHA_LIMPEZA) {
         alert("Senha incorreta. Tente novamente.");
         return;
@@ -233,7 +224,6 @@
       inputSenha.value = "";
     }
 
-    // Inicialização
     carregarHistorico();
     atualizarHistorico();
   </script>
