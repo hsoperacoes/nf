@@ -14,7 +14,7 @@
     }
 
     .container {
-      max-width: 800px; /* AUMENTEI A LARGURA */
+      max-width: 800px;
       margin: 0 auto;
       background-color: #1e1e1e;
       padding: 30px;
@@ -107,6 +107,9 @@
     <div class="history">
       <h3>Histórico da Filial</h3>
       <ul id="historicoLista"></ul>
+      <div style="text-align: center; margin-top: 20px;">
+        <button onclick="limparHistoricoLocal()" style="background-color: #c62828;">🗑 Limpar Histórico Local</button>
+      </div>
     </div>
   </div>
 
@@ -130,6 +133,12 @@
       location.reload();
     }
 
+    function limparHistoricoLocal() {
+      localStorage.removeItem('filial');
+      alert("Histórico local apagado. Você será redirecionado para o login.");
+      location.reload();
+    }
+
     function consultarNota() {
       const filial = localStorage.getItem('filial');
       const chave = document.getElementById('chave').value.trim();
@@ -150,9 +159,10 @@
           if (data.success) {
             resultado.classList.remove('hidden');
             resultado.innerHTML = `
+              <p><strong>Número da NF:</strong> ${data.data.numeroNF}</p>
               <p><strong>Valor Total:</strong> ${data.data.valorTotal}</p>
               <p><strong>Quantidade Total:</strong> ${data.data.quantidadeTotal}</p>
-              <p><strong>Status:</strong> ✅ Válida</p>
+              <p><strong>Status:</strong> ✅ ${data.data.status}</p>
             `;
             carregarHistorico(filial);
           } else {
@@ -181,13 +191,14 @@
             historicoLista.innerHTML = '';
             data.data.forEach(registro => {
               const dataFormatada = formatarDataBr(registro.dataHora);
-              const numeroNF = registro.numeroNF || '-';
-              const qtd = registro.quantidade || '-';
-              const status = registro.status || '---';
-
-              historicoLista.innerHTML += `
-                <li>${dataFormatada} - NF ${numeroNF} - ${qtd} itens - ${status}</li>
-              `;
+              const numeroNF = registro.numeroNF || '';
+              const qtd = registro.quantidade || '';
+              const status = registro.status || '';
+              let linha = `${dataFormatada}`;
+              if (numeroNF) linha += ` - NF ${numeroNF}`;
+              if (qtd) linha += ` - ${qtd} itens`;
+              linha += ` - ${status}`;
+              historicoLista.innerHTML += `<li>${linha}</li>`;
             });
           } else {
             historicoLista.innerHTML = '<li>Nenhum histórico encontrado.</li>';
