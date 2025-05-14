@@ -3,229 +3,117 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Consulta de NF</title>
+  <title>Consulta NF-e</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 30px;
-      background-color: #f5f5f5;
+      background-color: #121212;
+      color: #ffffff;
+      padding: 20px;
+      margin: 0;
     }
-    h1 {
-      color: #333;
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background-color: #1e1e1e;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
-    input[type="text"], input[type="password"] {
-      padding: 8px;
-      font-size: 16px;
-      width: 320px;
+
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
     }
-    button {
-      padding: 8px 14px;
-      font-size: 16px;
-      cursor: pointer;
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
     }
-    .resultado {
-      margin-top: 20px;
-      padding: 15px;
-      border-radius: 6px;
-    }
-    .sucesso {
-      background-color: #d4edda;
-      color: #155724;
-    }
-    .erro {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-    table {
-      margin-top: 30px;
+
+    input {
       width: 100%;
-      border-collapse: collapse;
-      background-color: white;
-    }
-    th, td {
-      border: 1px solid #ddd;
       padding: 10px;
-      text-align: left;
+      margin-bottom: 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #2a2a2a;
+      color: white;
     }
-    th {
-      background-color: #f2f2f2;
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #673ab7;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
     }
-    .status-valido {
-      color: green;
-      font-weight: bold;
+
+    .result {
+      margin-top: 30px;
+      background-color: #2e2e2e;
+      padding: 15px;
+      border-radius: 5px;
     }
-    .status-invalido {
-      color: red;
-      font-weight: bold;
-    }
-    #senhaContainer {
-      display: none;
-      margin-top: 20px;
+
+    .error {
+      color: #f44336;
+      margin-top: 15px;
     }
   </style>
 </head>
 <body>
-  <h1>Consulta de Nota Fiscal</h1>
+  <div class="container">
+    <h2>Consulta de Nota Fiscal</h2>
+    <label for="codigo">Código da Filial</label>
+    <input type="text" id="codigo" placeholder="Ex: 293 ou 488" />
 
-  <input type="text" id="inputChave" placeholder="Digite a chave de 44 dígitos" maxlength="44"/>
-  <button onclick="consultarNota()">Consultar</button>
+    <label for="chave">Chave de Acesso (44 dígitos)</label>
+    <input type="text" id="chave" placeholder="Digite a chave completa" maxlength="44"/>
 
-  <div id="resultado" class="resultado"></div>
+    <button onclick="consultarNota()">Consultar</button>
 
-  <h2>Histórico de Consultas</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Número NF</th>
-        <th>Valor Total</th>
-        <th>Qtd. Itens</th>
-        <th>Status</th>
-        <th>Data/Hora</th>
-      </tr>
-    </thead>
-    <tbody id="corpoHistorico"></tbody>
-  </table>
-
-  <button onclick="mostrarCampoSenha()">Limpar Histórico</button>
-
-  <div id="senhaContainer">
-    <input type="password" id="inputSenha" placeholder="Digite a senha para limpar"/>
-    <button onclick="limparHistorico()">Confirmar</button>
+    <div id="resultado" class="result" style="display:none;"></div>
+    <div id="erro" class="error"></div>
   </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
-    const HISTORICO_KEY = "historicoConsultasNF";
-    const SENHA_LIMPEZA = "hs2024";
+    function consultarNota() {
+      const codigo = document.getElementById('codigo').value.trim();
+      const chave = document.getElementById('chave').value.trim();
+      const resultado = document.getElementById('resultado');
+      const erro = document.getElementById('erro');
 
-    const inputChave = document.getElementById("inputChave");
-    const inputSenha = document.getElementById("inputSenha");
-    const divResultado = document.getElementById("resultado");
-    const divSenhaContainer = document.getElementById("senhaContainer");
-    const corpoHistorico = document.getElementById("corpoHistorico");
+      resultado.style.display = 'none';
+      erro.innerText = '';
 
-    let historico = [];
-
-    async function consultarNota() {
-      const chave = inputChave.value.trim();
-
-      if (chave.length !== 44) {
-        mostrarResultado("A chave deve conter exatamente 44 dígitos.", "erro");
+      if (!codigo || !chave || chave.length !== 44) {
+        erro.innerText = 'Preencha corretamente o código da filial e a chave com 44 dígitos.';
         return;
       }
 
-      if (historico.some(nf => nf.chaveOriginal === chave)) {
-        mostrarResultado("Esta chave já foi consultada.", "erro");
-        return;
-      }
-
-      try {
-        const data = await consultarWebApp(chave);
-        processarResposta(data, chave);
-      } catch (error) {
-        mostrarResultado(error.message, "erro");
-        registrarErroNoHistorico(error, chave);
-      }
-
-      inputChave.value = "";
+      fetch(`https://script.google.com/macros/s/SEU_DEPLOY_DO_APPSCRIPT/exec?chave=${chave}&codigo=${codigo}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.sucesso) {
+            resultado.style.display = 'block';
+            resultado.innerHTML = `
+              <p><strong>Quantidade de Itens:</strong> ${data.qtd}</p>
+              <p><strong>Valor Total:</strong> R$ ${data.total}</p>
+            `;
+          } else {
+            erro.innerText = data.mensagem || 'Erro ao buscar nota fiscal.';
+          }
+        })
+        .catch(() => {
+          erro.innerText = 'Erro de comunicação com o servidor.';
+        });
     }
-
-    async function consultarWebApp(chave) {
-      const url = `${WEB_APP_URL}?chave=${encodeURIComponent(chave)}`;
-      const response = await fetch(url);
-
-      if (!response.ok) throw new Error("Erro ao consultar o servidor");
-
-      const json = await response.json();
-
-      if (!json.success) {
-        throw new Error(json.message || "Nota fiscal inválida ou não encontrada");
-      }
-
-      return json.data;
-    }
-
-    function processarResposta(data, chaveOriginal) {
-      mostrarResultado("Consulta realizada com sucesso!", "sucesso");
-
-      const novaEntrada = {
-        numeroNF: data.numeroNF || 'N/A',
-        valorTotal: data.valorTotal || 'R$0,00',
-        quantidadeItens: data.quantidadeTotal || '0',
-        status: "Válido",
-        dataHora: data.dataRegistro,
-        chaveOriginal: chaveOriginal
-      };
-
-      historico.unshift(novaEntrada); // adiciona no início
-      salvarHistorico();
-      atualizarHistorico();
-    }
-
-    function registrarErroNoHistorico(error, chaveOriginal) {
-      historico.unshift({
-        numeroNF: "",
-        valorTotal: "R$0,00",
-        quantidadeItens: "0",
-        status: "Erro",
-        dataHora: new Date().toLocaleString('pt-BR'),
-        chaveOriginal: chaveOriginal
-      });
-      salvarHistorico();
-      atualizarHistorico();
-    }
-
-    function mostrarResultado(msg, tipo) {
-      divResultado.textContent = msg;
-      divResultado.className = `resultado ${tipo}`;
-    }
-
-    function salvarHistorico() {
-      localStorage.setItem(HISTORICO_KEY, JSON.stringify(historico));
-    }
-
-    function carregarHistorico() {
-      const salvo = localStorage.getItem(HISTORICO_KEY);
-      historico = salvo ? JSON.parse(salvo) : [];
-    }
-
-    function atualizarHistorico() {
-      corpoHistorico.innerHTML = "";
-
-      historico.forEach(item => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${item.numeroNF}</td>
-          <td>${item.valorTotal}</td>
-          <td>${item.quantidadeItens}</td>
-          <td class="${item.status === "Válido" ? "status-valido" : "status-invalido"}">${item.status}</td>
-          <td>${item.dataHora}</td>
-        `;
-        corpoHistorico.appendChild(tr);
-      });
-    }
-
-    function mostrarCampoSenha() {
-      divSenhaContainer.style.display = "block";
-      inputSenha.focus();
-    }
-
-    function limparHistorico() {
-      const senha = inputSenha.value.trim();
-      if (senha !== SENHA_LIMPEZA) {
-        alert("Senha incorreta. Tente novamente.");
-        return;
-      }
-
-      localStorage.removeItem(HISTORICO_KEY);
-      historico = [];
-      atualizarHistorico();
-      divSenhaContainer.style.display = "none";
-      inputSenha.value = "";
-    }
-
-    carregarHistorico();
-    atualizarHistorico();
   </script>
 </body>
 </html>
