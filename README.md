@@ -162,13 +162,14 @@
         chaveOriginal: chaveOriginal
       };
 
-      historico.push(novaEntrada);
+      // Coloca no topo da lista
+      historico.unshift(novaEntrada);
       salvarHistorico();
       atualizarHistorico();
     }
 
     function registrarErroNoHistorico(error, chaveOriginal) {
-      historico.push({
+      historico.unshift({
         numeroNF: "",
         valorTotal: "0,00",
         quantidadeItens: "0",
@@ -232,6 +233,7 @@
       inputSenha.value = "";
     }
 
+    // Inicialização
     carregarHistorico();
     atualizarHistorico();
   </script>
