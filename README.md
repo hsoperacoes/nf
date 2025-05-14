@@ -8,9 +8,9 @@
     body {
       font-family: Arial, sans-serif;
       background-color: #121212;
-      color: #ffffff;
-      padding: 20px;
+      color: white;
       margin: 0;
+      padding: 20px;
     }
 
     .container {
@@ -54,8 +54,12 @@
       font-size: 16px;
     }
 
-    .result {
-      margin-top: 30px;
+    .hidden {
+      display: none;
+    }
+
+    .result, .history {
+      margin-top: 20px;
       background-color: #2e2e2e;
       padding: 15px;
       border-radius: 5px;
@@ -65,49 +69,93 @@
       color: #f44336;
       margin-top: 15px;
     }
+
+    .logout {
+      text-align: right;
+      margin-top: -20px;
+      margin-bottom: 10px;
+    }
+
+    .logout button {
+      padding: 5px 10px;
+      background-color: #444;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Consulta de Nota Fiscal</h2>
-
+  <!-- TELA DE LOGIN -->
+  <div id="login" class="container">
+    <h2>Login da Filial</h2>
     <label for="codigo">Código da Filial</label>
     <input type="text" id="codigo" placeholder="Ex: 293 ou 488" />
+    <button onclick="entrar()">Entrar</button>
+  </div>
 
+  <!-- TELA PRINCIPAL -->
+  <div id="principal" class="container hidden">
+    <div class="logout">
+      <button onclick="sair()">Sair</button>
+    </div>
+    <h2>Consulta de Nota Fiscal</h2>
     <label for="chave">Chave de Acesso (44 dígitos)</label>
     <input type="text" id="chave" placeholder="Digite a chave completa" maxlength="44"/>
-
     <button onclick="consultarNota()">Consultar</button>
 
-    <div id="resultado" class="result" style="display:none;"></div>
+    <div id="resultado" class="result hidden"></div>
     <div id="erro" class="error"></div>
+
+    <div class="history">
+      <h3>Histórico da Filial</h3>
+      <ul id="historicoLista"></ul>
+    </div>
   </div>
 
   <script>
+    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
+
+    function entrar() {
+      const codigo = document.getElementById('codigo').value.trim();
+      if (!codigo) {
+        alert("Informe o código da filial.");
+        return;
+      }
+      localStorage.setItem('filial', codigo);
+      document.getElementById('login').classList.add('hidden');
+      document.getElementById('principal').classList.remove('hidden');
+      carregarHistorico(codigo);
+    }
+
+    function sair() {
+      localStorage.removeItem('filial');
+      location.reload();
+    }
+
     function consultarNota() {
-      const filial = document.getElementById('codigo').value.trim();
+      const filial = localStorage.getItem('filial');
       const chave = document.getElementById('chave').value.trim();
       const resultado = document.getElementById('resultado');
       const erro = document.getElementById('erro');
 
-      resultado.style.display = 'none';
+      resultado.classList.add('hidden');
       erro.innerText = '';
 
       if (!filial || !chave || chave.length !== 44) {
-        erro.innerText = 'Preencha corretamente o código da filial e a chave com 44 dígitos.';
+        erro.innerText = 'Preencha corretamente a chave com 44 dígitos.';
         return;
       }
 
-      fetch(`https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec?chave=${chave}&filial=${filial}`)
+      fetch(`${URL_SCRIPT}?chave=${chave}&filial=${filial}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            resultado.style.display = 'block';
+            resultado.classList.remove('hidden');
             resultado.innerHTML = `
               <p><strong>Número NF:</strong> ${data.data.numeroNF}</p>
               <p><strong>Quantidade de Itens:</strong> ${data.data.quantidadeTotal}</p>
               <p><strong>Valor Total:</strong> ${data.data.valorTotal}</p>
             `;
+            carregarHistorico(filial);
           } else {
             erro.innerText = data.message || 'Erro ao buscar nota fiscal.';
           }
@@ -116,6 +164,37 @@
           erro.innerText = 'Erro de comunicação com o servidor.';
         });
     }
+
+    function carregarHistorico(filial) {
+      const historicoLista = document.getElementById('historicoLista');
+      historicoLista.innerHTML = '<li>Carregando...</li>';
+
+      fetch(`${URL_SCRIPT}?acao=historico&filial=${filial}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data.length > 0) {
+            historicoLista.innerHTML = '';
+            data.data.forEach(registro => {
+              historicoLista.innerHTML += `<li>${registro.dataHora} - NF ${registro.numeroNF} - ${registro.chave}</li>`;
+            });
+          } else {
+            historicoLista.innerHTML = '<li>Nenhum histórico encontrado.</li>';
+          }
+        })
+        .catch(() => {
+          historicoLista.innerHTML = '<li>Erro ao carregar histórico.</li>';
+        });
+    }
+
+    // Carrega automático se já estiver logado
+    window.onload = function () {
+      const filial = localStorage.getItem('filial');
+      if (filial) {
+        document.getElementById('login').classList.add('hidden');
+        document.getElementById('principal').classList.remove('hidden');
+        carregarHistorico(filial);
+      }
+    };
   </script>
 </body>
 </html>
