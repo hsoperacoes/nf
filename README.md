@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Consulta de NF</title>
   <style>
     body {
@@ -78,7 +78,7 @@
       <tr>
         <th>Número NF</th>
         <th>Valor Total</th>
-        <th>Qtd. Produtos</th>
+        <th>Qtd. Itens</th>
         <th>Status</th>
         <th>Data/Hora</th>
       </tr>
@@ -116,7 +116,14 @@
 
       try {
         const data = await consultarWebApp(chave);
+
+        if (data.mensagemJaConsultada) {
+          mostrarResultado(data.mensagemJaConsultada, "erro");
+          return;
+        }
+
         processarResposta(data, chave);
+
       } catch (error) {
         mostrarResultado(error.message, "erro");
         registrarErroNoHistorico(error, chave);
@@ -133,7 +140,12 @@
 
       const json = await response.json();
 
-      if (!json.success) throw new Error(json.message || "Nota fiscal inválida ou não encontrada");
+      if (!json.success) {
+        if (json.message && json.message.includes("já foi consultada")) {
+          return { mensagemJaConsultada: json.message };
+        }
+        throw new Error(json.message || "Nota fiscal inválida ou não encontrada");
+      }
 
       return json.data;
     }
@@ -144,7 +156,7 @@
       const novaEntrada = {
         numeroNF: data.numeroNF || 'N/A',
         valorTotal: data.valorTotal || '0,00',
-        quantidadeTotal: data.quantidadeTotal || '0',
+        quantidadeItens: data.quantidadeTotal || '0',
         status: "Válido",
         dataHora: data.dataRegistro,
         chaveOriginal: chaveOriginal
@@ -159,7 +171,7 @@
       historico.push({
         numeroNF: "",
         valorTotal: "0,00",
-        quantidadeTotal: "0",
+        quantidadeItens: "0",
         status: "Erro",
         dataHora: new Date().toLocaleString('pt-BR'),
         chaveOriginal: chaveOriginal
@@ -191,7 +203,7 @@
         tr.innerHTML = `
           <td>${item.numeroNF}</td>
           <td>R$ ${item.valorTotal}</td>
-          <td>${item.quantidadeTotal}</td>
+          <td>${item.quantidadeItens}</td>
           <td class="${item.status === "Válido" ? "status-valido" : "status-invalido"}">${item.status}</td>
           <td>${item.dataHora}</td>
         `;
@@ -220,7 +232,6 @@
       inputSenha.value = "";
     }
 
-    // Inicialização
     carregarHistorico();
     atualizarHistorico();
   </script>
