@@ -80,10 +80,14 @@
       background-color: #444;
       font-size: 14px;
     }
+
+    .history button {
+      background-color: #c62828;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
-  <!-- TELA DE LOGIN -->
   <div id="login" class="container">
     <h2>Login da Filial</h2>
     <label for="codigo">Código da Filial</label>
@@ -91,7 +95,6 @@
     <button onclick="entrar()">Entrar</button>
   </div>
 
-  <!-- TELA PRINCIPAL -->
   <div id="principal" class="container hidden">
     <div class="logout">
       <button onclick="sair()">Sair</button>
@@ -107,9 +110,7 @@
     <div class="history">
       <h3>Histórico da Filial</h3>
       <ul id="historicoLista"></ul>
-      <div style="text-align: center; margin-top: 20px;">
-        <button onclick="limparHistoricoLocal()" style="background-color: #c62828;">🗑 Limpar Histórico Local</button>
-      </div>
+      <button onclick="limparHistoricoLocal()">🗑 Limpar Histórico Local</button>
     </div>
   </div>
 
@@ -135,6 +136,7 @@
 
     function limparHistoricoLocal() {
       localStorage.removeItem('filial');
+      document.getElementById('historicoLista').innerHTML = '';
       alert("Histórico local apagado. Você será redirecionado para o login.");
       location.reload();
     }
@@ -192,13 +194,15 @@
             data.data.forEach(registro => {
               const dataFormatada = formatarDataBr(registro.dataHora);
               const numeroNF = registro.numeroNF || '';
+              const valor = registro.valorTotal || '';
               const qtd = registro.quantidade || '';
               const status = registro.status || '';
               let linha = `${dataFormatada}`;
-              if (numeroNF) linha += ` - NF ${numeroNF}`;
-              if (qtd) linha += ` - ${qtd} itens`;
-              linha += ` - ${status}`;
-              historicoLista.innerHTML += `<li>${linha}</li>`;
+              if (numeroNF && numeroNF !== '-') linha += ` - NF ${numeroNF}`;
+              if (valor && valor !== '-') linha += ` - ${valor}`;
+              if (qtd && qtd !== '-') linha += ` - ${qtd} itens`;
+              if (status) linha += ` - ${status}`;
+              historicoLista.insertAdjacentHTML('afterbegin', `<li>${linha}</li>`);
             });
           } else {
             historicoLista.innerHTML = '<li>Nenhum histórico encontrado.</li>';
@@ -209,7 +213,6 @@
         });
     }
 
-    // Carrega automático se já estiver logado
     window.onload = function () {
       const filial = localStorage.getItem('filial');
       if (filial) {
