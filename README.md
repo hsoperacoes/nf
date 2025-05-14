@@ -151,13 +151,14 @@
           if (data.success) {
             resultado.classList.remove('hidden');
             resultado.innerHTML = `
-              <p><strong>Número NF:</strong> ${data.data.numeroNF}</p>
-              <p><strong>Quantidade de Itens:</strong> ${data.data.quantidadeTotal}</p>
               <p><strong>Valor Total:</strong> ${data.data.valorTotal}</p>
+              <p><strong>Quantidade Total:</strong> ${data.data.quantidadeTotal}</p>
+              <p><strong>Status:</strong> ✅ Válida</p>
             `;
             carregarHistorico(filial);
           } else {
             erro.innerText = data.message || 'Erro ao buscar nota fiscal.';
+            carregarHistorico(filial); // mesmo em caso de erro, atualiza histórico
           }
         })
         .catch(() => {
@@ -175,7 +176,9 @@
           if (data.success && data.data.length > 0) {
             historicoLista.innerHTML = '';
             data.data.forEach(registro => {
-              historicoLista.innerHTML += `<li>${registro.dataHora} - NF ${registro.numeroNF} - ${registro.chave}</li>`;
+              historicoLista.innerHTML += `
+                <li>${registro.dataHora} - ${registro.valorTotal || '-'} - ${registro.quantidade || '-'} - ${registro.status}</li>
+              `;
             });
           } else {
             historicoLista.innerHTML = '<li>Nenhum histórico encontrado.</li>';
