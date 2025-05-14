@@ -97,7 +97,7 @@
         return;
       }
 
-      fetch(`https://script.google.com/macros/s/SEU_DEPLOY_DO_APPSCRIPT/exec?chave=${chave}&codigo=${codigo}`)
+      fetch(`https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec?chave=${chave}&codigo=${codigo}`)
         .then(res => res.json())
         .then(data => {
           if (data.sucesso) {
