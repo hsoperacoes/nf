@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Consulta de Nota Fiscal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consulta de NF</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -66,7 +66,6 @@
 </head>
 <body>
   <h1>Consulta de Nota Fiscal</h1>
-  <p><strong>⚠️ Importante:</strong> abra este arquivo em um servidor local (ex: http://localhost:8000). Não use <code>file://</code> diretamente ou a consulta não funcionará.</p>
 
   <input type="text" id="inputChave" placeholder="Digite a chave de 44 dígitos" maxlength="44"/>
   <button onclick="consultarNota()">Consultar</button>
@@ -79,7 +78,7 @@
       <tr>
         <th>Número NF</th>
         <th>Valor Total</th>
-        <th>Itens</th>
+        <th>Qtd. Produtos</th>
         <th>Status</th>
         <th>Data/Hora</th>
       </tr>
@@ -95,7 +94,6 @@
   </div>
 
   <script>
-    // ✅ SUA URL DO WEB APP CORRETAMENTE INSERIDA
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
     const HISTORICO_KEY = "historicoConsultasNF";
     const SENHA_LIMPEZA = "hs2024";
@@ -146,7 +144,7 @@
       const novaEntrada = {
         numeroNF: data.numeroNF || 'N/A',
         valorTotal: data.valorTotal || '0,00',
-        itens: data.itens.join(", "),
+        quantidadeTotal: data.quantidadeTotal || '0',
         status: "Válido",
         dataHora: data.dataRegistro,
         chaveOriginal: chaveOriginal
@@ -161,7 +159,7 @@
       historico.push({
         numeroNF: "",
         valorTotal: "0,00",
-        itens: "",
+        quantidadeTotal: "0",
         status: "Erro",
         dataHora: new Date().toLocaleString('pt-BR'),
         chaveOriginal: chaveOriginal
@@ -193,7 +191,7 @@
         tr.innerHTML = `
           <td>${item.numeroNF}</td>
           <td>R$ ${item.valorTotal}</td>
-          <td>${item.itens}</td>
+          <td>${item.quantidadeTotal}</td>
           <td class="${item.status === "Válido" ? "status-valido" : "status-invalido"}">${item.status}</td>
           <td>${item.dataHora}</td>
         `;
