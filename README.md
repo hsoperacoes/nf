@@ -97,7 +97,7 @@
   <div id="login" class="container">
     <h2>Login da Filial</h2>
     <label for="codigo">Código da Filial</label>
-    <input type="text" id="codigo" placeholder="Ex: 293 ou 488" />
+    <input type="text" id="codigo" placeholder="Ex: 293, 488, 287, 761, 288" />
     <button onclick="entrar()">Entrar</button>
   </div>
 
