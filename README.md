@@ -135,10 +135,10 @@
     }
 
     function limparHistoricoLocal() {
-      localStorage.removeItem('filial');
+      const filial = localStorage.getItem('filial');
+      localStorage.removeItem(`historico_${filial}`);
       document.getElementById('historicoLista').innerHTML = '';
-      alert("Histórico local apagado. Você será redirecionado para o login.");
-      location.reload();
+      alert("Histórico local apagado.");
     }
 
     function consultarNota() {
@@ -166,10 +166,20 @@
               <p><strong>Quantidade Total:</strong> ${data.data.quantidadeTotal}</p>
               <p><strong>Status:</strong> ✅ ${data.data.status}</p>
             `;
+
+            // Salvar no histórico local
+            const historico = JSON.parse(localStorage.getItem(`historico_${filial}`)) || [];
+            historico.push({
+              dataHora: new Date().toISOString(),
+              numeroNF: data.data.numeroNF,
+              valorTotal: data.data.valorTotal,
+              quantidade: data.data.quantidadeTotal
+            });
+            localStorage.setItem(`historico_${filial}`, JSON.stringify(historico));
+
             carregarHistorico(filial);
           } else {
             erro.innerText = data.message || 'Erro ao buscar nota fiscal.';
-            carregarHistorico(filial);
           }
         })
         .catch(() => {
@@ -184,33 +194,19 @@
 
     function carregarHistorico(filial) {
       const historicoLista = document.getElementById('historicoLista');
-      historicoLista.innerHTML = '<li>Carregando...</li>';
+      const historico = JSON.parse(localStorage.getItem(`historico_${filial}`)) || [];
 
-      fetch(`${URL_SCRIPT}?acao=historico&filial=${filial}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.data.length > 0) {
-            historicoLista.innerHTML = '';
-            data.data.forEach(registro => {
-              const dataFormatada = formatarDataBr(registro.dataHora);
-              const numeroNF = registro.numeroNF || '';
-              const valor = registro.valorTotal || '';
-              const qtd = registro.quantidade || '';
-              const status = registro.status || '';
-              let linha = `${dataFormatada}`;
-              if (numeroNF && numeroNF !== '-') linha += ` - NF ${numeroNF}`;
-              if (valor && valor !== '-') linha += ` - ${valor}`;
-              if (qtd && qtd !== '-') linha += ` - ${qtd} itens`;
-              if (status) linha += ` - ${status}`;
-              historicoLista.insertAdjacentHTML('afterbegin', `<li>${linha}</li>`);
-            });
-          } else {
-            historicoLista.innerHTML = '<li>Nenhum histórico encontrado.</li>';
-          }
-        })
-        .catch(() => {
-          historicoLista.innerHTML = '<li>Erro ao carregar histórico.</li>';
-        });
+      if (historico.length === 0) {
+        historicoLista.innerHTML = '<li>Nenhum histórico local encontrado.</li>';
+        return;
+      }
+
+      historicoLista.innerHTML = '';
+      historico.slice().reverse().forEach(registro => {
+        const dataFormatada = formatarDataBr(registro.dataHora);
+        let linha = `${dataFormatada} - NF ${registro.numeroNF} - ${registro.valorTotal} - ${registro.quantidade} itens`;
+        historicoLista.insertAdjacentHTML('beforeend', `<li>${linha}</li>`);
+      });
     }
 
     window.onload = function () {
