@@ -85,6 +85,12 @@
       background-color: #c62828;
       margin-top: 20px;
     }
+
+    .loading {
+      text-align: center;
+      font-style: italic;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -104,6 +110,7 @@
     <input type="text" id="chave" placeholder="Digite a chave completa" maxlength="44"/>
     <button onclick="consultarNota()">Consultar</button>
 
+    <div id="loading" class="loading hidden">⏳ Consultando nota fiscal...</div>
     <div id="resultado" class="result hidden"></div>
     <div id="erro" class="error"></div>
 
@@ -146,6 +153,7 @@
       const chave = document.getElementById('chave').value.trim();
       const resultado = document.getElementById('resultado');
       const erro = document.getElementById('erro');
+      const loading = document.getElementById('loading');
 
       resultado.classList.add('hidden');
       erro.innerText = '';
@@ -155,12 +163,22 @@
         return;
       }
 
+      const historico = JSON.parse(localStorage.getItem(`historico_${filial}`)) || [];
+      const chaveExistente = historico.find(h => h.chave === chave);
+      if (chaveExistente) {
+        erro.innerText = 'Essa chave já foi consultada anteriormente!';
+        return;
+      }
+
+      loading.classList.remove('hidden');
+
       fetch(`${URL_SCRIPT}?chave=${chave}&filial=${filial}`)
         .then(res => res.json())
         .then(data => {
+          loading.classList.add('hidden');
+
           if (data.success) {
             const valorFormatado = data.data.valorTotal;
-
             resultado.classList.remove('hidden');
             resultado.innerHTML = `
               <p><strong>Número da NF:</strong> ${data.data.numeroNF}</p>
@@ -169,21 +187,21 @@
               <p><strong>Status:</strong> ✅ ${data.data.status}</p>
             `;
 
-            const historico = JSON.parse(localStorage.getItem(`historico_${filial}`)) || [];
             historico.push({
+              chave: chave,
               dataHora: new Date().toISOString(),
               numeroNF: data.data.numeroNF,
               valorTotal: valorFormatado,
               quantidade: data.data.quantidadeTotal
             });
             localStorage.setItem(`historico_${filial}`, JSON.stringify(historico));
-
             carregarHistorico(filial);
           } else {
             erro.innerText = data.message || 'Erro ao buscar nota fiscal.';
           }
         })
         .catch(() => {
+          loading.classList.add('hidden');
           erro.innerText = 'Erro de comunicação com o servidor.';
         });
     }
