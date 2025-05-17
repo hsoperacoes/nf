@@ -142,6 +142,12 @@
     }
 
     function limparHistoricoLocal() {
+      const senha = prompt("Digite a senha para limpar o histórico:");
+      if (senha !== "hs") {
+        alert("Senha incorreta. Operação cancelada.");
+        return;
+      }
+
       const filial = localStorage.getItem('filial');
       localStorage.removeItem(`historico_${filial}`);
       document.getElementById('historicoLista').innerHTML = '';
