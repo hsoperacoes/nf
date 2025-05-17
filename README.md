@@ -1,97 +1,147 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Consulta NF-e</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background-color: #121212;
-      color: #fff;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      flex-direction: column;
-    }
-    .container {
-      width: 100%;
-      max-width: 700px;
-      margin: 20px auto;
-      padding: 20px;
-    }
-    .card {
-      background-color: #2a2a2a;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    button, select, input {
-      padding: 10px;
-      margin-top: 10px;
-      font-size: 16px;
-      width: 100%;
-    }
-    .btn-red {
-      background-color: #d32f2f;
       color: white;
-      border: none;
-      border-radius: 4px;
+      margin: 0;
+      padding: 20px;
     }
-    .btn-purple {
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #1e1e1e;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    h2, h3 {
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #2a2a2a;
+      color: white;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
       background-color: #673ab7;
       color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
     }
-    .hidden { display: none; }
-    ul { padding-left: 20px; }
+
+    .hidden {
+      display: none;
+    }
+
+    .result, .history {
+      margin-top: 20px;
+      background-color: #2e2e2e;
+      padding: 15px;
+      border-radius: 5px;
+    }
+
+    .error {
+      color: #f44336;
+      margin-top: 15px;
+    }
+
+    .logout {
+      text-align: right;
+      margin-top: -20px;
+      margin-bottom: 10px;
+    }
+
+    .logout button {
+      padding: 5px 10px;
+      background-color: #444;
+      font-size: 14px;
+    }
+
+    .history button {
+      background-color: #c62828;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div id="login" class="card">
-      <h2>Informe o código da filial</h2>
-      <select id="filial">
-        <option value="">Selecione</option>
-        <option value="293">ARTUR</option>
-        <option value="488">FLORIANO</option>
-      </select>
-      <button class="btn-purple" onclick="entrar()">Entrar</button>
-    </div>
+  <div id="login" class="container">
+    <h2>Login da Filial</h2>
+    <label for="codigo">Código da Filial</label>
+    <input type="text" id="codigo" placeholder="Ex: 293 ou 488" />
+    <button onclick="entrar()">Entrar</button>
+  </div>
 
-    <div id="principal" class="card hidden">
-      <input type="text" id="chave" placeholder="Digite a chave da NF (44 dígitos)" maxlength="44">
-      <button class="btn-purple" onclick="consultar()">Consultar</button>
-      <p id="erro" style="color: red;"></p>
-      <div id="resultado" class="hidden"></div>
+  <div id="principal" class="container hidden">
+    <div class="logout">
+      <button onclick="sair()">Sair</button>
     </div>
+    <h2>Consulta de Nota Fiscal</h2>
+    <label for="chave">Chave de Acesso (44 dígitos)</label>
+    <input type="text" id="chave" placeholder="Digite a chave completa" maxlength="44"/>
+    <button onclick="consultarNota()">Consultar</button>
 
-    <div class="card">
+    <div id="resultado" class="result hidden"></div>
+    <div id="erro" class="error"></div>
+
+    <div class="history">
       <h3>Histórico da Filial</h3>
-      <ul id="historicoLista">
-        <li>Nenhum histórico encontrado.</li>
-      </ul>
-      <button class="btn-red" onclick="limparHistorico()">🗑 Limpar Histórico Local</button>
+      <ul id="historicoLista"></ul>
+      <button onclick="limparHistoricoLocal()">🗑 Limpar Histórico Local</button>
     </div>
   </div>
 
   <script>
-    const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec';
+    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
 
     function entrar() {
-      const filial = document.getElementById('filial').value;
-      if (!filial) return alert('Selecione uma filial.');
-      localStorage.setItem('filial', filial);
+      const codigo = document.getElementById('codigo').value.trim();
+      if (!codigo) {
+        alert("Informe o código da filial.");
+        return;
+      }
+      localStorage.setItem('filial', codigo);
       document.getElementById('login').classList.add('hidden');
       document.getElementById('principal').classList.remove('hidden');
-      carregarHistorico(filial);
+      carregarHistorico(codigo);
     }
 
-    function consultar() {
+    function sair() {
+      localStorage.removeItem('filial');
+      location.reload();
+    }
+
+    function limparHistoricoLocal() {
+      localStorage.removeItem('filial');
+      document.getElementById('historicoLista').innerHTML = '';
+      alert("Histórico local apagado. Você será redirecionado para o login.");
+      location.reload();
+    }
+
+    function consultarNota() {
       const filial = localStorage.getItem('filial');
       const chave = document.getElementById('chave').value.trim();
       const resultado = document.getElementById('resultado');
@@ -116,17 +166,6 @@
               <p><strong>Quantidade Total:</strong> ${data.data.quantidadeTotal}</p>
               <p><strong>Status:</strong> ✅ ${data.data.status}</p>
             `;
-
-            const historicoKey = `historico_${filial}`;
-            const historico = JSON.parse(localStorage.getItem(historicoKey)) || [];
-            historico.unshift({
-              dataHora: new Date().toISOString(),
-              numeroNF: data.data.numeroNF,
-              valorTotal: data.data.valorTotal,
-              quantidade: data.data.quantidadeTotal,
-              status: data.data.status
-            });
-            localStorage.setItem(historicoKey, JSON.stringify(historico));
             carregarHistorico(filial);
           } else {
             erro.innerText = data.message || 'Erro ao buscar nota fiscal.';
@@ -145,33 +184,33 @@
 
     function carregarHistorico(filial) {
       const historicoLista = document.getElementById('historicoLista');
-      const historicoKey = `historico_${filial}`;
-      const historico = JSON.parse(localStorage.getItem(historicoKey)) || [];
+      historicoLista.innerHTML = '<li>Carregando...</li>';
 
-      if (historico.length > 0) {
-        historicoLista.innerHTML = '';
-        historico.forEach(registro => {
-          const dataFormatada = formatarDataBr(registro.dataHora);
-          const numeroNF = registro.numeroNF || '';
-          const valor = registro.valorTotal || '';
-          const qtd = registro.quantidade || '';
-          const status = registro.status || '';
-          let linha = `${dataFormatada}`;
-          if (numeroNF && numeroNF !== '-') linha += ` - NF ${numeroNF}`;
-          if (valor && valor !== '-') linha += ` - ${valor}`;
-          if (qtd && qtd !== '-') linha += ` - ${qtd} itens`;
-          if (status) linha += ` - ${status}`;
-          historicoLista.insertAdjacentHTML('beforeend', `<li>${linha}</li>`);
+      fetch(`${URL_SCRIPT}?acao=historico&filial=${filial}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data.length > 0) {
+            historicoLista.innerHTML = '';
+            data.data.forEach(registro => {
+              const dataFormatada = formatarDataBr(registro.dataHora);
+              const numeroNF = registro.numeroNF || '';
+              const valor = registro.valorTotal || '';
+              const qtd = registro.quantidade || '';
+              const status = registro.status || '';
+              let linha = `${dataFormatada}`;
+              if (numeroNF && numeroNF !== '-') linha += ` - NF ${numeroNF}`;
+              if (valor && valor !== '-') linha += ` - ${valor}`;
+              if (qtd && qtd !== '-') linha += ` - ${qtd} itens`;
+              if (status) linha += ` - ${status}`;
+              historicoLista.insertAdjacentHTML('afterbegin', `<li>${linha}</li>`);
+            });
+          } else {
+            historicoLista.innerHTML = '<li>Nenhum histórico encontrado.</li>';
+          }
+        })
+        .catch(() => {
+          historicoLista.innerHTML = '<li>Erro ao carregar histórico.</li>';
         });
-      } else {
-        historicoLista.innerHTML = '<li>Nenhum histórico encontrado.</li>';
-      }
-    }
-
-    function limparHistorico() {
-      const filial = localStorage.getItem('filial');
-      localStorage.removeItem(`historico_${filial}`);
-      carregarHistorico(filial);
     }
 
     window.onload = function () {
