@@ -159,7 +159,7 @@
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            const valorFormatado = formatarValor(data.data.valorTotal);
+            const valorFormatado = data.data.valorTotal;
 
             resultado.classList.remove('hidden');
             resultado.innerHTML = `
@@ -169,7 +169,6 @@
               <p><strong>Status:</strong> ✅ ${data.data.status}</p>
             `;
 
-            // Salvar no histórico local
             const historico = JSON.parse(localStorage.getItem(`historico_${filial}`)) || [];
             historico.push({
               dataHora: new Date().toISOString(),
@@ -192,12 +191,6 @@
     function formatarDataBr(iso) {
       const dt = new Date(iso);
       return dt.toLocaleDateString('pt-BR');
-    }
-
-    function formatarValor(valorStr) {
-      let num = parseFloat(valorStr.toString().replace(/\./g, '').replace(',', '.'));
-      if (isNaN(num)) num = 0;
-      return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
     function carregarHistorico(filial) {
