@@ -160,6 +160,7 @@
       const resultado = document.getElementById('resultado');
       const erro = document.getElementById('erro');
       const loading = document.getElementById('loading');
+      const botao = document.querySelector("button[onclick='consultarNota()']");
 
       resultado.classList.add('hidden');
       erro.innerText = '';
@@ -176,13 +177,12 @@
         return;
       }
 
+      botao.disabled = true;
       loading.classList.remove('hidden');
 
       fetch(`${URL_SCRIPT}?chave=${chave}&filial=${filial}`)
         .then(res => res.json())
         .then(data => {
-          loading.classList.add('hidden');
-
           if (data.success) {
             const valorFormatado = data.data.valorTotal;
             resultado.classList.remove('hidden');
@@ -207,8 +207,11 @@
           }
         })
         .catch(() => {
-          loading.classList.add('hidden');
           erro.innerText = 'Erro de comunicação com o servidor.';
+        })
+        .finally(() => {
+          loading.classList.add('hidden');
+          botao.disabled = false;
         });
     }
 
