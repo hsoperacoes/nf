@@ -91,9 +91,17 @@
       font-style: italic;
       margin-top: 10px;
     }
+
+    .logo {
+      display: block;
+      margin: 0 auto 20px;
+      max-width: 100px;
+    }
   </style>
 </head>
 <body>
+  <img src="logo herihg.png" alt="Logo" class="logo">
+
   <div id="login" class="container">
     <h2>Login da Filial</h2>
     <label for="codigo">Código da Filial</label>
