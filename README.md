@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -100,7 +99,7 @@
   </style>
 </head>
 <body>
-  <img src="logo herihg.png" alt="Logo" class="logo">
+  <img src="logo.png" alt="Logo" class="logo">
 
   <div id="login" class="container">
     <h2>Login da Filial</h2>
