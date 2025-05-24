@@ -1,256 +1,173 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Consulta NF-e</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NF-e - Consulta Simples</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #121212;
-      color: white;
-      margin: 0;
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
       padding: 20px;
     }
-
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background-color: #1e1e1e;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    .box {
+      background: #1c1c1c;
+      max-width: 700px;
+      margin: 30px auto;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px #000;
     }
-
-    h2, h3 {
+    h1 {
       text-align: center;
+      color: #bbb;
     }
-
     label {
       display: block;
+      margin-top: 15px;
       margin-bottom: 5px;
       font-weight: bold;
     }
-
     input {
       width: 100%;
-      padding: 10px;
-      margin-bottom: 20px;
+      padding: 8px;
       border: none;
-      border-radius: 5px;
-      background-color: #2a2a2a;
-      color: white;
+      border-radius: 4px;
+      background: #333;
+      color: #fff;
     }
-
     button {
+      margin-top: 20px;
       width: 100%;
       padding: 12px;
-      background-color: #673ab7;
-      color: white;
+      background: #4a2caf;
+      color: #fff;
       border: none;
-      border-radius: 5px;
-      cursor: pointer;
+      border-radius: 4px;
       font-size: 16px;
+      cursor: pointer;
     }
-
-    .hidden {
-      display: none;
-    }
-
-    .result, .history {
+    .res, .erro, .loading {
       margin-top: 20px;
-      background-color: #2e2e2e;
       padding: 15px;
+      background: #2a2a2a;
       border-radius: 5px;
     }
-
-    .error {
-      color: #f44336;
-      margin-top: 15px;
-    }
-
-    .logout {
-      text-align: right;
-      margin-top: -20px;
-      margin-bottom: 10px;
-    }
-
-    .logout button {
-      padding: 5px 10px;
-      background-color: #444;
-      font-size: 14px;
-    }
-
-    .history button {
-      background-color: #c62828;
-      margin-top: 20px;
-    }
-
-    .loading {
-      text-align: center;
-      font-style: italic;
-      margin-top: 10px;
-    }
-
-    .logo {
-      display: block;
-      margin: 0 auto 20px;
-      max-width: 100px;
-    }
+    .erro { color: #ff6b6b; }
+    .res p { margin: 8px 0; }
+    .hist ul { padding-left: 20px; }
   </style>
 </head>
 <body>
-  <img src="logo.png.png" alt="Logo" class="logo">
-
-  <div id="login" class="container">
-    <h2>Login da Filial</h2>
-    <label for="codigo">Código da Filial</label>
-    <input type="text" id="codigo" placeholder="Digite sua senha" />
-    <button onclick="entrar()">Entrar</button>
+  <div class="box" id="telaLogin">
+    <h1>Entrar</h1>
+    <label>Código da Filial:</label>
+    <input type="text" id="filial" placeholder="Ex: 293">
+    <button onclick="entrar()">Confirmar</button>
   </div>
 
-  <div id="principal" class="container hidden">
-    <div class="logout">
-      <button onclick="sair()">Sair</button>
-    </div>
-    <h2>Consulta de Nota Fiscal</h2>
-    <label for="chave">Chave de Acesso (44 dígitos)</label>
-    <input type="text" id="chave" placeholder="Digite a chave completa" maxlength="44"/>
-    <button onclick="consultarNota()">Consultar</button>
+  <div class="box hidden" id="telaConsulta">
+    <button style="float:right;font-size:13px;padding:4px 10px" onclick="sair()">Sair</button>
+    <h1>Consulta NF-e</h1>
 
-    <div id="loading" class="loading hidden">⏳ Consultando nota fiscal...</div>
-    <div id="resultado" class="result hidden"></div>
-    <div id="erro" class="error"></div>
+    <label>Chave da NF (44 dígitos):</label>
+    <input type="text" id="chave" maxlength="44" placeholder="Digite a chave">
+    <button onclick="consultarNota()">Consultar Nota</button>
 
-    <div class="history">
-      <h3>Histórico da Filial</h3>
-      <ul id="historicoLista"></ul>
-      <button onclick="limparHistoricoLocal()">🗑 Limpar Histórico Local</button>
+    <div id="carregando" class="loading hidden">Consultando... aguarde...</div>
+    <div id="resultado" class="res hidden"></div>
+    <div id="erro" class="erro"></div>
+
+    <div class="hist">
+      <h3>Histórico</h3>
+      <ul id="listaHistorico"></ul>
+      <button onclick="limparHist()">🗑 Limpar</button>
     </div>
   </div>
 
   <script>
-    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
+    const URL = "https://script.google.com/macros/s/AKfycbwUa5DLhtKpa2kUAMxicHQsPlIG3gsLW-D3Scq6WUjAw42JIcUerAgy4f1H3TxsJLTB/exec";
 
     function entrar() {
-      const codigo = document.getElementById('codigo').value.trim();
-      if (!codigo) {
-        alert("Informe o código da filial.");
-        return;
-      }
-      localStorage.setItem('filial', codigo);
-      document.getElementById('login').classList.add('hidden');
-      document.getElementById('principal').classList.remove('hidden');
-      carregarHistorico(codigo);
+      const cod = document.getElementById('filial').value.trim();
+      if (!cod) return alert("Digite o código da filial!");
+      localStorage.setItem("filial", cod);
+      document.getElementById('telaLogin').classList.add('hidden');
+      document.getElementById('telaConsulta').classList.remove('hidden');
+      carregarHist(cod);
     }
 
     function sair() {
-      localStorage.removeItem('filial');
+      localStorage.removeItem("filial");
       location.reload();
     }
 
-    function limparHistoricoLocal() {
-      const senha = prompt("Digite a senha para limpar o histórico:");
-      if (senha !== "hs") {
-        alert("Senha incorreta. Operação cancelada.");
-        return;
-      }
-
-      const filial = localStorage.getItem('filial');
-      localStorage.removeItem(`historico_${filial}`);
-      document.getElementById('historicoLista').innerHTML = '';
-      alert("Histórico local apagado.");
-    }
-
     function consultarNota() {
-      const filial = localStorage.getItem('filial');
+      const filial = localStorage.getItem("filial");
       const chave = document.getElementById('chave').value.trim();
-      const resultado = document.getElementById('resultado');
+      const res = document.getElementById('resultado');
       const erro = document.getElementById('erro');
-      const loading = document.getElementById('loading');
-      const botao = document.querySelector("button[onclick='consultarNota()']");
-
-      resultado.classList.add('hidden');
-      erro.innerText = '';
-
-      if (!filial || !chave || chave.length !== 44) {
-        erro.innerText = 'Preencha corretamente a chave com 44 dígitos.';
+      const loading = document.getElementById('carregando');
+      
+      res.classList.add('hidden');
+      erro.innerText = "";
+      if (!filial || chave.length !== 44) {
+        erro.innerText = "Código da filial ou chave inválida.";
         return;
       }
 
-      const historico = JSON.parse(localStorage.getItem(`historico_${filial}`)) || [];
-      const chaveExistente = historico.find(h => h.chave === chave);
-      if (chaveExistente) {
-        erro.innerText = 'Essa chave já foi consultada anteriormente!';
+      const historico = JSON.parse(localStorage.getItem("hist_" + filial)) || [];
+      if (historico.find(n => n.chave === chave)) {
+        erro.innerText = "Essa nota já foi consultada.";
         return;
       }
 
-      botao.disabled = true;
       loading.classList.remove('hidden');
-
-      fetch(`${URL_SCRIPT}?chave=${chave}&filial=${filial}`)
-        .then(res => res.json())
+      fetch(`${URL}?chave=${chave}&filial=${filial}`)
+        .then(r => r.json())
         .then(data => {
           if (data.success) {
-            const valorFormatado = data.data.valorTotal;
-            resultado.classList.remove('hidden');
-            resultado.innerHTML = `
-              <p><strong>Número da NF:</strong> ${data.data.numeroNF}</p>
-              <p><strong>Valor Total:</strong> ${valorFormatado}</p>
-              <p><strong>Quantidade Total:</strong> ${data.data.quantidadeTotal}</p>
-              <p><strong>Status:</strong> ✅ ${data.data.status}</p>
+            res.innerHTML = `
+              <p><b>Número:</b> ${data.data.numeroNF}</p>
+              <p><b>Valor:</b> ${data.data.valorTotal}</p>
+              <p><b>Qtd Itens:</b> ${data.data.quantidadeTotal}</p>
+              <p><b>Status:</b> ✅ ${data.data.status}</p>
             `;
-
-            historico.push({
-              chave: chave,
-              dataHora: new Date().toISOString(),
-              numeroNF: data.data.numeroNF,
-              valorTotal: valorFormatado,
-              quantidade: data.data.quantidadeTotal
-            });
-            localStorage.setItem(`historico_${filial}`, JSON.stringify(historico));
-            carregarHistorico(filial);
+            res.classList.remove('hidden');
+            historico.push({ chave, numero: data.data.numeroNF });
+            localStorage.setItem("hist_" + filial, JSON.stringify(historico));
+            carregarHist(filial);
           } else {
-            erro.innerText = data.message || 'Erro ao buscar nota fiscal.';
+            erro.innerText = data.message || 'Erro ao consultar nota';
           }
         })
-        .catch(() => {
-          erro.innerText = 'Erro de comunicação com o servidor.';
-        })
-        .finally(() => {
-          loading.classList.add('hidden');
-          botao.disabled = false;
-        });
+        .catch(() => erro.innerText = "Erro de conexão")
+        .finally(() => loading.classList.add('hidden'));
     }
 
-    function formatarDataBr(iso) {
-      const dt = new Date(iso);
-      return dt.toLocaleDateString('pt-BR');
-    }
-
-    function carregarHistorico(filial) {
-      const historicoLista = document.getElementById('historicoLista');
-      const historico = JSON.parse(localStorage.getItem(`historico_${filial}`)) || [];
-
-      if (historico.length === 0) {
-        historicoLista.innerHTML = '<li>Nenhum histórico local encontrado.</li>';
-        return;
-      }
-
-      historicoLista.innerHTML = '';
-      historico.slice().reverse().forEach(registro => {
-        const dataFormatada = formatarDataBr(registro.dataHora);
-        let linha = `${dataFormatada} - NF ${registro.numeroNF} - ${registro.valorTotal} - ${registro.quantidade} itens`;
-        historicoLista.insertAdjacentHTML('beforeend', `<li>${linha}</li>`);
+    function carregarHist(filial) {
+      const lista = document.getElementById('listaHistorico');
+      const hist = JSON.parse(localStorage.getItem("hist_" + filial)) || [];
+      lista.innerHTML = hist.length === 0 ? "<li>Nenhum registro</li>" : "";
+      hist.slice().reverse().forEach(n => {
+        lista.innerHTML += `<li>NF ${n.numero}</li>`;
       });
     }
 
-    window.onload = function () {
-      const filial = localStorage.getItem('filial');
+    function limparHist() {
+      if (prompt("Senha para limpar histórico?") !== "hs") return alert("Negado!");
+      const filial = localStorage.getItem("filial");
+      localStorage.removeItem("hist_" + filial);
+      carregarHist(filial);
+    }
+
+    window.onload = () => {
+      const filial = localStorage.getItem("filial");
       if (filial) {
-        document.getElementById('login').classList.add('hidden');
-        document.getElementById('principal').classList.remove('hidden');
-        carregarHistorico(filial);
+        document.getElementById('telaLogin').classList.add('hidden');
+        document.getElementById('telaConsulta').classList.remove('hidden');
+        carregarHist(filial);
       }
     };
   </script>
