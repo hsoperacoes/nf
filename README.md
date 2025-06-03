@@ -93,7 +93,7 @@
   </style>
 </head>
 <body>
-  <img src="logo.png" alt="Logo" class="logo">
+  <img src="logo.logo.png" alt="Logo" class="logo">
   <div id="login" class="container">
     <h2>Login da Filial</h2>
     <label for="codigo">Código da Filial</label>
