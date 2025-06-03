@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Consulta NF-e</title>
-  <script src="https://unpkg.com/html5-qrcode@2.2.1/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/@ericblade/quagga2@1.2.7/dist/quagga.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -88,8 +88,19 @@
     #reader {
       width: 100%;
       max-width: 350px;
-      height: auto;
+      height: 240px;
       margin: 10px auto;
+      position: relative;
+    }
+    #interactive.viewport {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    canvas, video {
+      max-width: 100%;
+      width: 100% !important;
+      height: auto !important;
     }
   </style>
 </head>
@@ -111,7 +122,9 @@
     <input type="text" id="chave" placeholder="Digite a chave completa" maxlength="44" />
     <button onclick="consultarNota()">Consultar</button>
     <button onclick="iniciarScanner()">📷 Escanear Código</button>
-    <div id="reader" class="hidden"></div>
+    <div id="reader" class="hidden">
+      <div id="interactive" class="viewport"></div>
+    </div>
 
     <div id="loading" class="loading hidden">⏳ Consultando nota fiscal...</div>
     <div id="resultado" class="result hidden"></div>
@@ -220,19 +233,39 @@ function carregarHistorico(filial) {
 }
 
 function iniciarScanner() {
-  const reader = new Html5Qrcode("reader");
-  document.getElementById("reader").classList.remove("hidden");
-  reader.start({ facingMode: "environment" }, {
-    fps: 10,
-    qrbox: { width: 300, height: 80 }
-  }, qrCodeMessage => {
-    document.getElementById("chave").value = qrCodeMessage;
-    reader.stop().then(() => {
-      document.getElementById("reader").classList.add("hidden");
+  const readerDiv = document.getElementById("reader");
+  readerDiv.classList.remove("hidden");
+
+  Quagga.init({
+    inputStream: {
+      type: "LiveStream",
+      target: document.querySelector('#interactive'),
+      constraints: {
+        facingMode: "environment"
+      }
+    },
+    locator: { patchSize: "medium", halfSample: true },
+    decoder: {
+      readers: ["code_128_reader"]
+    },
+    locate: true
+  }, function(err) {
+    if (err) {
+      console.error(err);
+      alert("Erro ao iniciar o leitor: " + err);
+      return;
+    }
+    Quagga.start();
+  });
+
+  Quagga.onDetected(data => {
+    const codigo = data.codeResult.code;
+    if (codigo.length >= 44) {
+      document.getElementById("chave").value = codigo.substring(0, 44);
+      Quagga.stop();
+      readerDiv.classList.add("hidden");
       document.getElementById("chave").focus();
-    });
-  }, () => {}).catch(err => {
-    alert("Erro ao acessar a câmera: " + err);
+    }
   });
 }
 
