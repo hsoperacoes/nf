@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Consulta NF-e</title>
-  <script src="https://unpkg.com/html5-qrcode@2.3.7/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.2.1/html5-qrcode.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -87,7 +87,7 @@
     }
     #reader {
       width: 100%;
-      max-width: 400px;
+      max-width: 600px;
       margin: 0 auto 20px;
     }
   </style>
