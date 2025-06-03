@@ -11,13 +11,13 @@
       background-color: #121212;
       color: white;
       margin: 0;
-      padding: 20px;
+      padding: 0;
     }
     .container {
-      max-width: 800px;
-      margin: 0 auto;
+      max-width: 400px;
+      margin: 20px auto;
       background-color: #1e1e1e;
-      padding: 30px;
+      padding: 20px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
@@ -32,7 +32,7 @@
     input {
       width: 100%;
       padding: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       border: none;
       border-radius: 5px;
       background-color: #2a2a2a;
@@ -40,13 +40,14 @@
     }
     button {
       width: 100%;
-      padding: 12px;
+      padding: 10px;
       background-color: #673ab7;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
       font-size: 16px;
+      margin-bottom: 10px;
     }
     .hidden {
       display: none;
@@ -54,16 +55,15 @@
     .result, .history {
       margin-top: 20px;
       background-color: #2e2e2e;
-      padding: 15px;
+      padding: 10px;
       border-radius: 5px;
     }
     .error {
       color: #f44336;
-      margin-top: 15px;
+      margin-top: 10px;
     }
     .logout {
       text-align: right;
-      margin-top: -20px;
       margin-bottom: 10px;
     }
     .logout button {
@@ -73,7 +73,7 @@
     }
     .history button {
       background-color: #c62828;
-      margin-top: 20px;
+      margin-top: 15px;
     }
     .loading {
       text-align: center;
@@ -82,13 +82,14 @@
     }
     .logo {
       display: block;
-      margin: 0 auto 20px;
-      max-width: 100px;
+      margin: 20px auto 10px;
+      max-width: 80px;
     }
     #reader {
       width: 100%;
-      max-width: 600px;
-      margin: 0 auto 20px;
+      max-width: 350px;
+      height: auto;
+      margin: 10px auto;
     }
   </style>
 </head>
@@ -222,17 +223,15 @@ function iniciarScanner() {
   const reader = new Html5Qrcode("reader");
   document.getElementById("reader").classList.remove("hidden");
   reader.start({ facingMode: "environment" }, {
-      fps: 10,
-      qrbox: { width: 350, height: 120 } },
-    qrCodeMessage => {
-      document.getElementById("chave").value = qrCodeMessage;
-      reader.stop().then(() => {
-        document.getElementById("reader").classList.add("hidden");
-        document.getElementById("chave").focus();
-      });
-    },
-    errorMessage => {}
-  ).catch(err => {
+    fps: 10,
+    qrbox: { width: 300, height: 80 }
+  }, qrCodeMessage => {
+    document.getElementById("chave").value = qrCodeMessage;
+    reader.stop().then(() => {
+      document.getElementById("reader").classList.add("hidden");
+      document.getElementById("chave").focus();
+    });
+  }, () => {}).catch(err => {
     alert("Erro ao acessar a câmera: " + err);
   });
 }
