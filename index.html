@@ -1,276 +1,268 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Consulta NF-e</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/dynamsoft-javascript-barcode@9.6.21/dist/dbr.js"></script>
   <style>
     body {
-      background: #121212;
-      color: #fff;
       font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: white;
       margin: 0;
       padding: 0;
     }
 
     .logo {
-      background: #000;
+      background-color: #000;
       text-align: center;
-      padding: 10px;
+      padding: 15px;
     }
 
     .logo img {
-      width: 130px;
+      max-width: 150px;
+      height: auto;
     }
 
-    .box {
-      background: #1e1e1e;
+    .container {
       max-width: 800px;
       margin: 0 auto;
-      padding: 25px;
-      border-radius: 8px;
+      background-color: #1e1e1e;
+      padding: 30px;
+      border-radius: 10px;
     }
 
-    h2, h3 {
-      text-align: center;
-    }
+    h2, h3 { text-align: center; }
 
     label {
-      margin-top: 10px;
       display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
     }
 
     input, button {
       width: 100%;
       padding: 10px;
-      margin-top: 8px;
-      border: none;
+      margin-bottom: 10px;
       border-radius: 5px;
+      border: none;
       font-size: 16px;
     }
 
-    input {
-      background: #2c2c2c;
-      color: white;
-    }
+    input { background-color: #2a2a2a; color: white; }
+    button { background-color: #673ab7; color: white; cursor: pointer; }
+    .hidden { display: none !important; }
 
-    button {
-      background: #673ab7;
-      color: white;
-      cursor: pointer;
-    }
-
-    .esconde {
-      display: none !important;
-    }
-
-    .result-box {
-      background: #2d2d2d;
-      padding: 10px;
+    .result, .history {
       margin-top: 20px;
+      background-color: #2e2e2e;
+      padding: 15px;
       border-radius: 5px;
     }
 
-    .erro {
-      color: red;
-      margin-top: 15px;
-    }
+    .error { color: #f44336; margin-top: 15px; }
 
-    .sair-btn {
+    .logout {
       text-align: right;
+      margin-top: -20px;
       margin-bottom: 10px;
     }
 
-    .sair-btn button {
+    .logout button {
+      padding: 5px 10px;
+      background-color: #444;
       font-size: 14px;
-      padding: 5px 8px;
-      background: #444;
     }
 
     #scanner {
+      width: 100%;
+      height: 100vh;
       position: fixed;
       top: 0;
       left: 0;
-      z-index: 999;
-      width: 100%;
-      height: 100vh;
-      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      background-color: transparent;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
     }
   </style>
 </head>
 <body>
 
+  <!-- LOGO NO TOPO -->
   <div class="logo">
     <img src="logo.png" alt="Logo">
   </div>
 
   <!-- LOGIN -->
-  <div id="telaLogin" class="box">
-    <h2>Login</h2>
-    <label>Código da Filial</label>
-    <input type="text" id="codFilial" placeholder="Digite seu código de filial.">
-    <button onclick="fazerLogin()">Entrar</button>
+  <div id="login" class="container">
+    <h2>Login da Filial</h2>
+    <label for="codigo">Código da Filial</label>
+    <input type="text" id="codigo" placeholder="Digite o código da filial" />
+    <button onclick="entrar()">Entrar</button>
   </div>
 
   <!-- PRINCIPAL -->
-  <div id="telaPrincipal" class="box esconde">
-    <div class="sair-btn">
-      <button onclick="logout()">Sair</button>
+  <div id="principal" class="container hidden">
+    <div class="logout">
+      <button onclick="sair()">Sair</button>
     </div>
-    <h2>Consultar Nota Fiscal</h2>
-    <label>Chave de Acesso (44 dígitos)</label>
-    <input type="text" id="campoChave" maxlength="44" placeholder="Digite a chave aqui">
-    <button onclick="ligarLeitor()">📷 Ler Código de Barras</button>
+    <h2>Consulta de Nota Fiscal</h2>
+    <label for="chave">Chave de Acesso (44 dígitos)</label>
+    <input type="text" id="chave" placeholder="Digite a chave completa" maxlength="44"/>
+    <button onclick="abrirLeitor()">📷 Ler Código de Barras</button>
+
     <div id="scanner" style="display: none;"></div>
-    <button onclick="consultar()">Consultar</button>
 
-    <div id="carregando" class="esconde">⏳ Consultando...</div>
-    <div id="resposta" class="result-box esconde"></div>
-    <div id="msgErro" class="erro"></div>
+    <button onclick="consultarNota()">Consultar</button>
+    <div id="loading" class="hidden">⏳ Consultando nota fiscal...</div>
+    <div id="resultado" class="result hidden"></div>
+    <div id="erro" class="error"></div>
 
-    <div class="result-box">
-      <h3>Histórico</h3>
-      <ul id="listaHistorico"></ul>
-      <button onclick="limpar()">🗑 Limpar Histórico</button>
+    <div class="history">
+      <h3>Histórico da Filial</h3>
+      <ul id="historicoLista"></ul>
+      <button onclick="limparHistoricoLocal()">🗑 Limpar Histórico Local</button>
     </div>
   </div>
 
   <script>
-    const URL = "https://script.google.com/macros/s/AKfycbwfoYOgleHUcmbr_1B8tV_NG6cEZxcHm5zBSrJ0ItgRV_Cp7tumh3GjBzsvzTSNJ5sbmA/exec";
-    const codigos = ["293", "488", "287", "288", "999"];
-    let leitor = null;
+    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwfoYOgleHUcmbr_1B8tV_NG6cEZxcHm5zBSrJ0ItgRV_Cp7tumh3GjBzsvzTSNJ5sbmA/exec";
+    const filiaisValidas = ["293", "488", "287", "288", "999"];
+    let scannerInstance = null;
 
-    function fazerLogin() {
-      let cod = document.getElementById("codFilial").value.trim();
-      if (!codigos.includes(cod)) {
-        alert("Filial inválida.");
+    function entrar() {
+      const codigo = document.getElementById('codigo').value.trim();
+      if (!codigo || !filiaisValidas.includes(codigo)) {
+        alert("Código de filial inválido.");
         return;
       }
-      localStorage.setItem("filial", cod);
-      document.getElementById("telaLogin").classList.add("esconde");
-      document.getElementById("telaPrincipal").classList.remove("esconde");
-      carregarHistorico();
+      localStorage.setItem('filial', codigo);
+      document.getElementById('login').classList.add('hidden');
+      document.getElementById('principal').classList.remove('hidden');
+      carregarHistorico(codigo);
     }
 
-    function logout() {
-      localStorage.removeItem("filial");
+    function sair() {
+      localStorage.removeItem('filial');
       location.reload();
     }
 
-    function limpar() {
-      let senha = prompt("Senha para limpar?");
-      if (senha !== "hs") {
-        alert("Senha errada.");
-        return;
-      }
-      localStorage.removeItem("historico_" + localStorage.getItem("filial"));
-      document.getElementById("listaHistorico").innerHTML = "";
+    function limparHistoricoLocal() {
+      const senha = prompt("Digite a senha para limpar o histórico:");
+      if (senha !== "hs") return alert("Senha incorreta.");
+      const filial = localStorage.getItem('filial');
+      localStorage.removeItem(historico_${filial});
+      document.getElementById('historicoLista').innerHTML = '';
+      alert("Histórico apagado.");
     }
 
-    function consultar() {
-      let filial = localStorage.getItem("filial");
-      let chave = document.getElementById("campoChave").value.trim();
-      let resposta = document.getElementById("resposta");
-      let erro = document.getElementById("msgErro");
-      let loading = document.getElementById("carregando");
+    function consultarNota() {
+      const filial = localStorage.getItem('filial');
+      const chave = document.getElementById('chave').value.trim();
+      const resultado = document.getElementById('resultado');
+      const erro = document.getElementById('erro');
+      const loading = document.getElementById('loading');
 
-      resposta.classList.add("esconde");
-      erro.innerText = "";
+      resultado.classList.add('hidden');
+      erro.innerText = '';
 
-      if (!chave || chave.length !== 44) {
-        erro.innerText = "Chave inválida.";
+      if (!filial || chave.length !== 44) {
+        erro.innerText = 'Preencha corretamente a chave com 44 dígitos.';
         return;
       }
 
-      let historico = JSON.parse(localStorage.getItem("historico_" + filial)) || [];
-      if (historico.find(i => i.chave === chave)) {
-        erro.innerText = "Essa chave já foi consultada.";
+      const historico = JSON.parse(localStorage.getItem(historico_${filial})) || [];
+      if (historico.some(h => h.chave === chave)) {
+        erro.innerText = 'Essa chave já foi consultada anteriormente!';
         return;
       }
 
-      loading.classList.remove("esconde");
+      loading.classList.remove('hidden');
 
-      fetch(`${URL}?chave=${chave}&filial=${filial}`)
-        .then(r => r.json())
-        .then(d => {
-          if (d.success) {
-            resposta.classList.remove("esconde");
-            resposta.innerHTML = `
-              <p><b>NF:</b> ${d.data.numeroNF}</p>
-              <p><b>Valor:</b> ${d.data.valorTotal}</p>
-              <p><b>Qtde:</b> ${d.data.quantidadeTotal}</p>
-              <p><b>Status:</b> ✅ ${d.data.status}</p>
-            `;
-            historico.push({ chave, ...d.data, dataHora: new Date().toISOString() });
-            localStorage.setItem("historico_" + filial, JSON.stringify(historico));
-            carregarHistorico();
+      fetch(${URL_SCRIPT}?chave=${chave}&filial=${filial})
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            resultado.classList.remove('hidden');
+            resultado.innerHTML = 
+              <p><strong>Número da NF:</strong> ${data.data.numeroNF}</p>
+              <p><strong>Valor Total:</strong> ${data.data.valorTotal}</p>
+              <p><strong>Quantidade Total:</strong> ${data.data.quantidadeTotal}</p>
+              <p><strong>Status:</strong> ✅ ${data.data.status}</p>
+            ;
+            historico.push({ chave, dataHora: new Date().toISOString(), ...data.data });
+            localStorage.setItem(historico_${filial}, JSON.stringify(historico));
+            carregarHistorico(filial);
           } else {
-            erro.innerText = d.message || "Erro ao consultar.";
+            erro.innerText = data.message || 'Erro ao buscar nota fiscal.';
           }
         })
-        .catch(() => erro.innerText = "Erro de conexão.")
-        .finally(() => loading.classList.add("esconde"));
+        .catch(() => erro.innerText = 'Erro de comunicação com o servidor.')
+        .finally(() => loading.classList.add('hidden'));
     }
 
-    function carregarHistorico() {
-      let filial = localStorage.getItem("filial");
-      let lista = document.getElementById("listaHistorico");
-      let historico = JSON.parse(localStorage.getItem("historico_" + filial)) || [];
-      lista.innerHTML = "";
-
+    function carregarHistorico(filial) {
+      const lista = document.getElementById('historicoLista');
+      const historico = JSON.parse(localStorage.getItem(historico_${filial})) || [];
+      lista.innerHTML = '';
       if (historico.length === 0) {
-        lista.innerHTML = "<li>Nenhum registro.</li>";
+        lista.innerHTML = '<li>Nenhum histórico local encontrado.</li>';
         return;
       }
-
-      historico.reverse().forEach(item => {
-        let data = new Date(item.dataHora).toLocaleDateString("pt-BR");
-        lista.innerHTML += `<li>${data} - NF ${item.numeroNF} - ${item.valorTotal} - ${item.quantidadeTotal} itens</li>`;
+      historico.slice().reverse().forEach(item => {
+        const data = new Date(item.dataHora).toLocaleDateString('pt-BR');
+        lista.innerHTML += <li>${data} - NF ${item.numeroNF} - ${item.valorTotal} - ${item.quantidadeTotal} itens</li>;
       });
     }
 
-    async function ligarLeitor() {
-      let tela = document.getElementById("scanner");
-      tela.style.display = "flex";
+    async function abrirLeitor() {
+      const scannerDiv = document.getElementById("scanner");
+      scannerDiv.style.display = "block";
 
       Dynamsoft.DBR.BarcodeScanner.license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0MDgyMzg1LVRYbFhaV0pRY205cSIsIm1haW5TZXJ2ZXJVUkwiOiJodHRwczovL21kbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsIm9yZ2FuaXphdGlvbklEIjoiMTA0MDgyMzg1Iiwic3RhbmRieVNlcnZlclVSTCI6Imh0dHBzOi8vc2Rscy5keW5hbXNvZnRvbmxpbmUuY29tIiwiY2hlY2tDb2RlIjoxNzI0OTg5ODA0fQ==";
 
       try {
-        leitor = await Dynamsoft.DBR.BarcodeScanner.createInstance();
-        await leitor.updateRuntimeSettings("speed");
+        scannerInstance = await Dynamsoft.DBR.BarcodeScanner.createInstance();
+        await scannerInstance.updateRuntimeSettings("speed");
 
-        leitor.onFrameRead = resultados => {
-          for (let r of resultados) {
-            if (r.barcodeText.length >= 44) {
-              document.getElementById("campoChave").value = r.barcodeText.slice(0, 44);
-              if (leitor) {
-                leitor.hide();
-                leitor.stop();
-                leitor = null;
+        scannerInstance.onFrameRead = results => {
+          for (let result of results) {
+            const codigo = result.barcodeText;
+            if (codigo.length >= 44) {
+              document.getElementById("chave").value = codigo.substring(0, 44);
+              if (scannerInstance) {
+                try {
+                  scannerInstance.hide();
+                  scannerInstance.stop();
+                  scannerInstance = null;
+                } catch (e) {
+                  console.error("Erro ao fechar o scanner:", e);
+                }
               }
-              tela.style.display = "none";
+              scannerDiv.style.display = "none";
               break;
             }
           }
         };
 
-        await leitor.show(tela);
-      } catch (erro) {
-        alert("Erro no leitor: " + erro.message);
-        tela.style.display = "none";
+        await scannerInstance.show(scannerDiv);
+      } catch (ex) {
+        alert("Erro ao iniciar o leitor: " + ex.message);
+        scannerDiv.style.display = "none";
       }
     }
 
-    // Auto-login se tiver salvo
     window.onload = () => {
-      let filial = localStorage.getItem("filial");
+      const filial = localStorage.getItem('filial');
       if (filial) {
-        document.getElementById("telaLogin").classList.add("esconde");
-        document.getElementById("telaPrincipal").classList.remove("esconde");
-        carregarHistorico();
+        document.getElementById('login').classList.add('hidden');
+        document.getElementById('principal').classList.remove('hidden');
+        carregarHistorico(filial);
       }
-    }
+    };
   </script>
 </body>
 </html>
