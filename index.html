@@ -227,7 +227,7 @@
       const scannerDiv = document.getElementById("scanner");
       const campoChave = document.getElementById("chave").value.trim();
 
-      // Bloqueia se já houver uma chave preenchida
+      // 🚫 Bloqueia totalmente se o campo estiver preenchido
       if (campoChave.length === 44) {
         alert("Limpe o campo da chave antes de escanear uma nova nota.");
         return;
