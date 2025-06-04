@@ -186,7 +186,7 @@
         .then(data => {
           if (data.success) {
             resultado.classList.remove('hidden');
-            resultado.textContent = ''; // Limpa antes
+            resultado.textContent = '';
             const info = `
               <p><strong>Número da NF:</strong> ${data.data.numeroNF}</p>
               <p><strong>Valor Total:</strong> ${data.data.valorTotal}</p>
@@ -205,7 +205,7 @@
         .catch(() => erro.innerText = 'Erro de comunicação com o servidor.')
         .finally(() => {
           loading.classList.add('hidden');
-          campoChave.value = ""; // limpa o campo depois da consulta
+          campoChave.value = "";
         });
     }
 
@@ -225,6 +225,14 @@
 
     async function abrirLeitor() {
       const scannerDiv = document.getElementById("scanner");
+      const campoChave = document.getElementById("chave").value.trim();
+
+      // Bloqueia se já houver uma chave preenchida
+      if (campoChave.length === 44) {
+        alert("Limpe o campo da chave antes de escanear uma nova nota.");
+        return;
+      }
+
       scannerDiv.classList.remove("hidden");
 
       Dynamsoft.DBR.BarcodeScanner.license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0MDgyMzg1LVRYbFhaV0pRY205cSIsIm1haW5TZXJ2ZXJVUkwiOiJodHRwczovL21kbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsIm9yZ2FuaXphdGlvbklEIjoiMTA0MDgyMzg1Iiwic3RhbmRieVNlcnZlclVSTCI6Imh0dHBzOi8vc2Rscy5keW5hbXNvZnRvbmxpbmUuY29tIiwiY2hlY2tDb2RlIjoxNzI0OTg5ODA0fQ==";
@@ -235,7 +243,7 @@
           scannerInstance = null;
         }
 
-        scannerDiv.innerHTML = ""; // limpa a div
+        scannerDiv.innerHTML = "";
 
         scannerInstance = await Dynamsoft.DBR.BarcodeScanner.createInstance();
         await scannerInstance.updateRuntimeSettings("speed");
@@ -247,17 +255,14 @@
               document.getElementById("chave").value = codigo.substring(0, 44);
 
               try {
-                if (scannerInstance) {
-                  scannerInstance.hide();
-                  scannerInstance.stop();
-                  scannerInstance = null;
-                }
-                scannerDiv.classList.add("hidden");
-              } catch (erroInterno) {
-                console.warn("Erro ao finalizar scanner:", erroInterno);
-                scannerDiv.classList.add("hidden");
+                scannerInstance.hide();
+                scannerInstance.stop();
+                scannerInstance = null;
+              } catch (e) {
+                console.warn("Erro ao finalizar scanner:", e);
               }
 
+              scannerDiv.classList.add("hidden");
               break;
             }
           }
