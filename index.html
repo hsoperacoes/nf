@@ -13,7 +13,6 @@
       margin: 0;
       padding: 20px;
     }
-
     .container {
       max-width: 800px;
       margin: 0 auto;
@@ -21,17 +20,12 @@
       padding: 30px;
       border-radius: 10px;
     }
-
-    h2, h3 {
-      text-align: center;
-    }
-
+    h2, h3 { text-align: center; }
     label {
       display: block;
       margin-bottom: 5px;
       font-weight: bold;
     }
-
     input, button {
       width: 100%;
       padding: 10px;
@@ -40,44 +34,34 @@
       border: none;
       font-size: 16px;
     }
-
-    input {
-      background-color: #2a2a2a;
-      color: white;
-    }
-
-    button {
-      background-color: #673ab7;
-      color: white;
-      cursor: pointer;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
+    input { background-color: #2a2a2a; color: white; }
+    button { background-color: #673ab7; color: white; cursor: pointer; }
+    .hidden { display: none !important; }
     .result, .history {
       margin-top: 20px;
       background-color: #2e2e2e;
       padding: 15px;
       border-radius: 5px;
     }
-
-    .error {
-      color: #f44336;
-      margin-top: 15px;
-    }
-
-    .logout {
-      text-align: right;
-      margin-top: -20px;
-      margin-bottom: 10px;
-    }
-
+    .error { color: #f44336; margin-top: 15px; }
+    .logout { text-align: right; margin-top: -20px; margin-bottom: 10px; }
     .logout button {
       padding: 5px 10px;
       background-color: #444;
       font-size: 14px;
+    }
+    #scanner {
+      width: 100%;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      background-color: rgba(0, 0, 0, 0.9);
     }
   </style>
 </head>
@@ -98,7 +82,7 @@
     <input type="text" id="chave" placeholder="Digite a chave completa" maxlength="44"/>
     <button onclick="abrirLeitor()">📷 Ler Código de Barras</button>
 
-    <!-- scanner será criado dinamicamente -->
+    <div id="scanner"></div>
 
     <button onclick="consultarNota()">Consultar</button>
     <div id="loading" class="hidden">⏳ Consultando nota fiscal...</div>
@@ -145,8 +129,8 @@
 
     function consultarNota() {
       const filial = localStorage.getItem('filial');
-      const campoChave = document.getElementById('chave');
-      const chave = campoChave.value.trim();
+      const chaveInput = document.getElementById('chave');
+      const chave = chaveInput.value.trim();
       const resultado = document.getElementById('resultado');
       const erro = document.getElementById('erro');
       const loading = document.getElementById('loading');
@@ -172,15 +156,12 @@
         .then(data => {
           if (data.success) {
             resultado.classList.remove('hidden');
-            resultado.textContent = '';
-            const info = `
+            resultado.innerHTML = `
               <p><strong>Número da NF:</strong> ${data.data.numeroNF}</p>
               <p><strong>Valor Total:</strong> ${data.data.valorTotal}</p>
               <p><strong>Quantidade Total:</strong> ${data.data.quantidadeTotal}</p>
               <p><strong>Status:</strong> ✅ ${data.data.status}</p>
             `;
-            resultado.insertAdjacentHTML('beforeend', info);
-
             historico.push({ chave, dataHora: new Date().toISOString(), ...data.data });
             localStorage.setItem(`historico_${filial}`, JSON.stringify(historico));
             carregarHistorico(filial);
@@ -191,7 +172,7 @@
         .catch(() => erro.innerText = 'Erro de comunicação com o servidor.')
         .finally(() => {
           loading.classList.add('hidden');
-          campoChave.value = "";
+          chaveInput.value = ''; // limpa campo após consulta
         });
     }
 
@@ -210,50 +191,23 @@
     }
 
     async function abrirLeitor() {
-      const campoChave = document.getElementById("chave").value.trim();
+      const chaveInput = document.getElementById('chave');
+      const scannerDiv = document.getElementById("scanner");
 
-      // Proteção: se já tem chave, não deixa escanear
-      if (campoChave.length === 44) {
-        alert("Limpe o campo da chave antes de escanear uma nova nota.");
+      if (chaveInput.value.trim() !== '') {
+        alert("Limpe o campo antes de escanear outro código.");
         return;
       }
 
-      // Para e destrói instância anterior
-      if (scannerInstance) {
-        try {
-          await scannerInstance.stop();
-        } catch (e) {
-          console.warn("Erro ao destruir scanner anterior:", e);
-        }
-        scannerInstance = null;
-      }
-
-      // Remove div scanner antiga se existir
-      const scannerAntigo = document.getElementById("scanner");
-      if (scannerAntigo) scannerAntigo.remove();
-
-      // Cria nova div scanner limpa
-      const novoScanner = document.createElement("div");
-      novoScanner.id = "scanner";
-      Object.assign(novoScanner.style, {
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        flexDirection: "column",
-        position: "fixed",
-        top: "0",
-        left: "0",
-        width: "100%",
-        height: "100vh",
-        backgroundColor: "transparent",
-        zIndex: "1000"
-      });
-      document.body.appendChild(novoScanner);
-
-      // Inicia scanner
-      Dynamsoft.DBR.BarcodeScanner.license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0MDgyMzg1LVRYbFhaV0pRY205cSIsIm1haW5TZXJ2ZXJVUkwiOiJodHRwczovL21kbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsIm9yZ2FuaXphdGlvbklEIjoiMTA0MDgyMzg1Iiwic3RhbmRieVNlcnZlclVSTCI6Imh0dHBzOi8vc2Rscy5keW5hbXNvZnRvbmxpbmUuY29tIiwiY2hlY2tDb2RlIjoxNzI0OTg5ODA0fQ==";
-
       try {
+        if (scannerInstance) {
+          await scannerInstance.destroyContext();
+          scannerInstance = null;
+        }
+
+        scannerDiv.style.display = "flex";
+        Dynamsoft.DBR.BarcodeScanner.license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0MDgyMzg1LVRYbFhaV0pRY205cSIsIm1haW5TZXJ2ZXJVUkwiOiJodHRwczovL21kbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsIm9yZ2FuaXphdGlvbklEIjoiMTA0MDgyMzg1Iiwic3RhbmRieVNlcnZlclVSTCI6Imh0dHBzOi8vc2Rscy5keW5hbXNvZnRvbmxpbmUuY29tIiwiY2hlY2tDb2RlIjoxNzI0OTg5ODA0fQ==";
+
         scannerInstance = await Dynamsoft.DBR.BarcodeScanner.createInstance();
         await scannerInstance.updateRuntimeSettings("speed");
 
@@ -261,28 +215,19 @@
           for (let result of results) {
             const codigo = result.barcodeText;
             if (codigo.length >= 44) {
-              document.getElementById("chave").value = codigo.substring(0, 44);
-
-              try {
-                scannerInstance.hide();
-                scannerInstance.stop();
-                scannerInstance = null;
-              } catch (e) {
-                console.warn("Erro ao parar scanner:", e);
-              }
-
-              const s = document.getElementById("scanner");
-              if (s) s.remove();
-              break;
+              chaveInput.value = codigo.substring(0, 44);
+              scannerInstance.hide();
+              scannerInstance.stop();
+              scannerDiv.style.display = "none";
+              return;
             }
           }
         };
 
-        await scannerInstance.show(novoScanner);
+        await scannerInstance.show(scannerDiv);
       } catch (ex) {
         alert("Erro ao iniciar o leitor: " + ex.message);
-        const s = document.getElementById("scanner");
-        if (s) s.remove();
+        scannerDiv.style.display = "none";
       }
     }
 
