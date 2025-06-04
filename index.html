@@ -13,6 +13,7 @@
       margin: 0;
       padding: 20px;
     }
+
     .container {
       max-width: 800px;
       margin: 0 auto;
@@ -20,12 +21,17 @@
       padding: 30px;
       border-radius: 10px;
     }
-    h2, h3 { text-align: center; }
+
+    h2, h3 {
+      text-align: center;
+    }
+
     label {
       display: block;
       margin-bottom: 5px;
       font-weight: bold;
     }
+
     input, button {
       width: 100%;
       padding: 10px;
@@ -34,38 +40,59 @@
       border: none;
       font-size: 16px;
     }
-    input { background-color: #2a2a2a; color: white; }
-    button { background-color: #673ab7; color: white; cursor: pointer; }
-    .hidden { display: none !important; }
+
+    input {
+      background-color: #2a2a2a;
+      color: white;
+    }
+
+    button {
+      background-color: #673ab7;
+      color: white;
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
     .result, .history {
       margin-top: 20px;
       background-color: #2e2e2e;
       padding: 15px;
       border-radius: 5px;
     }
-    .error { color: #f44336; margin-top: 15px; }
-    .logout { text-align: right; margin-top: -20px; margin-bottom: 10px; }
+
+    .error {
+      color: #f44336;
+      margin-top: 15px;
+    }
+
+    .logout {
+      text-align: right;
+      margin-top: -20px;
+      margin-bottom: 10px;
+    }
+
     .logout button {
       padding: 5px 10px;
       background-color: #444;
       font-size: 14px;
     }
-    /* Ajustado para corresponder ao JS */
+
     #scanner {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
       width: 100%;
       height: 100vh;
       position: fixed;
       top: 0;
       left: 0;
       z-index: 1000;
-      background-color: transparent;
-      /* display: none; /* Controlado pelo JS agora */
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
+      background-color: rgba(0, 0, 0, 0.9);
     }
-    /* O botão fechar foi removido, então seu estilo não é mais necessário */
-    /* #btnFechar { ... } */
   </style>
 </head>
 <body>
@@ -85,10 +112,7 @@
     <input type="text" id="chave" placeholder="Digite a chave completa" maxlength="44"/>
     <button onclick="abrirLeitor()">📷 Ler Código de Barras</button>
 
-    <!-- Div do scanner, botão Fechar removido -->
-    <div id="scanner" style="display: none;">
-      <!-- Conteúdo do scanner será inserido aqui pelo Dynamsoft -->
-    </div>
+    <div id="scanner" class="hidden"></div>
 
     <button onclick="consultarNota()">Consultar</button>
     <div id="loading" class="hidden">⏳ Consultando nota fiscal...</div>
@@ -135,7 +159,8 @@
 
     function consultarNota() {
       const filial = localStorage.getItem('filial');
-      const chave = document.getElementById('chave').value.trim();
+      const campoChave = document.getElementById('chave');
+      const chave = campoChave.value.trim();
       const resultado = document.getElementById('resultado');
       const erro = document.getElementById('erro');
       const loading = document.getElementById('loading');
@@ -175,7 +200,10 @@
           }
         })
         .catch(() => erro.innerText = 'Erro de comunicação com o servidor.')
-        .finally(() => loading.classList.add('hidden'));
+        .finally(() => {
+          loading.classList.add('hidden');
+          campoChave.value = ""; // limpa o campo
+        });
     }
 
     function carregarHistorico(filial) {
@@ -192,40 +220,33 @@
       });
     }
 
-    // Função abrirLeitor MODIFICADA
     async function abrirLeitor() {
       const scannerDiv = document.getElementById("scanner");
-      // Usa display block para mostrar
-      scannerDiv.style.display = "block"; 
+      scannerDiv.classList.remove("hidden");
 
       Dynamsoft.DBR.BarcodeScanner.license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0MDgyMzg1LVRYbFhaV0pRY205cSIsIm1haW5TZXJ2ZXJVUkwiOiJodHRwczovL21kbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsIm9yZ2FuaXphdGlvbklEIjoiMTA0MDgyMzg1Iiwic3RhbmRieVNlcnZlclVSTCI6Imh0dHBzOi8vc2Rscy5keW5hbXNvZnRvbmxpbmUuY29tIiwiY2hlY2tDb2RlIjoxNzI0OTg5ODA0fQ==";
 
       try {
+        if (scannerInstance) {
+          await scannerInstance.stop();
+          scannerInstance = null;
+        }
+
         scannerInstance = await Dynamsoft.DBR.BarcodeScanner.createInstance();
         await scannerInstance.updateRuntimeSettings("speed");
 
         scannerInstance.onFrameRead = results => {
           for (let result of results) {
             const codigo = result.barcodeText;
-            // Mantém a verificação original
-            if (codigo.length >= 44) { 
+            if (codigo.length >= 44) {
               document.getElementById("chave").value = codigo.substring(0, 44);
-              
-              // --- Lógica de fechamento imediato --- 
-              if (scannerInstance) { 
-                  try {
-                      scannerInstance.hide();
-                      scannerInstance.stop(); 
-                      scannerInstance = null; 
-                  } catch (e) {
-                      console.error("Erro ao fechar o scanner:", e);
-                  }
+              if (scannerInstance) {
+                scannerInstance.hide();
+                scannerInstance.stop();
+                scannerInstance = null;
               }
-              // Oculta a div container imediatamente
-              scannerDiv.style.display = "none"; 
-              // --- Fim da lógica de fechamento --- 
-              
-              break; // Sai do loop
+              scannerDiv.classList.add("hidden");
+              break;
             }
           }
         };
@@ -233,12 +254,9 @@
         await scannerInstance.show(scannerDiv);
       } catch (ex) {
         alert("Erro ao iniciar o leitor: " + ex.message);
-        // Garante que a div seja escondida em caso de erro
-        scannerDiv.style.display = "none"; 
+        scannerDiv.classList.add("hidden");
       }
     }
-
-    // Função fecharLeitor foi REMOVIDA
 
     window.onload = () => {
       const filial = localStorage.getItem('filial');
