@@ -79,20 +79,6 @@
       background-color: #444;
       font-size: 14px;
     }
-
-    #scanner {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      width: 100%;
-      height: 100vh;
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 1000;
-      background-color: transparent;
-    }
   </style>
 </head>
 <body>
@@ -112,7 +98,7 @@
     <input type="text" id="chave" placeholder="Digite a chave completa" maxlength="44"/>
     <button onclick="abrirLeitor()">📷 Ler Código de Barras</button>
 
-    <div id="scanner" class="hidden"></div>
+    <!-- scanner será criado dinamicamente -->
 
     <button onclick="consultarNota()">Consultar</button>
     <div id="loading" class="hidden">⏳ Consultando nota fiscal...</div>
@@ -224,27 +210,50 @@
     }
 
     async function abrirLeitor() {
-      const scannerDiv = document.getElementById("scanner");
       const campoChave = document.getElementById("chave").value.trim();
 
-      // 🚫 Bloqueia totalmente se o campo estiver preenchido
+      // Proteção: se já tem chave, não deixa escanear
       if (campoChave.length === 44) {
         alert("Limpe o campo da chave antes de escanear uma nova nota.");
         return;
       }
 
-      scannerDiv.classList.remove("hidden");
+      // Para e destrói instância anterior
+      if (scannerInstance) {
+        try {
+          await scannerInstance.stop();
+        } catch (e) {
+          console.warn("Erro ao destruir scanner anterior:", e);
+        }
+        scannerInstance = null;
+      }
 
+      // Remove div scanner antiga se existir
+      const scannerAntigo = document.getElementById("scanner");
+      if (scannerAntigo) scannerAntigo.remove();
+
+      // Cria nova div scanner limpa
+      const novoScanner = document.createElement("div");
+      novoScanner.id = "scanner";
+      Object.assign(novoScanner.style, {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        flexDirection: "column",
+        position: "fixed",
+        top: "0",
+        left: "0",
+        width: "100%",
+        height: "100vh",
+        backgroundColor: "transparent",
+        zIndex: "1000"
+      });
+      document.body.appendChild(novoScanner);
+
+      // Inicia scanner
       Dynamsoft.DBR.BarcodeScanner.license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0MDgyMzg1LVRYbFhaV0pRY205cSIsIm1haW5TZXJ2ZXJVUkwiOiJodHRwczovL21kbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsIm9yZ2FuaXphdGlvbklEIjoiMTA0MDgyMzg1Iiwic3RhbmRieVNlcnZlclVSTCI6Imh0dHBzOi8vc2Rscy5keW5hbXNvZnRvbmxpbmUuY29tIiwiY2hlY2tDb2RlIjoxNzI0OTg5ODA0fQ==";
 
       try {
-        if (scannerInstance) {
-          await scannerInstance.stop();
-          scannerInstance = null;
-        }
-
-        scannerDiv.innerHTML = "";
-
         scannerInstance = await Dynamsoft.DBR.BarcodeScanner.createInstance();
         await scannerInstance.updateRuntimeSettings("speed");
 
@@ -259,19 +268,21 @@
                 scannerInstance.stop();
                 scannerInstance = null;
               } catch (e) {
-                console.warn("Erro ao finalizar scanner:", e);
+                console.warn("Erro ao parar scanner:", e);
               }
 
-              scannerDiv.classList.add("hidden");
+              const s = document.getElementById("scanner");
+              if (s) s.remove();
               break;
             }
           }
         };
 
-        await scannerInstance.show(scannerDiv);
+        await scannerInstance.show(novoScanner);
       } catch (ex) {
         alert("Erro ao iniciar o leitor: " + ex.message);
-        scannerDiv.classList.add("hidden");
+        const s = document.getElementById("scanner");
+        if (s) s.remove();
       }
     }
 
