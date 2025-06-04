@@ -11,7 +11,16 @@
       background-color: #121212;
       color: white;
       margin: 0;
-      padding: 20px;
+      padding: 0;
+    }
+    .logo {
+      background-color: #000;
+      text-align: center;
+      padding: 15px;
+    }
+    .logo img {
+      max-width: 150px;
+      height: auto;
     }
     .container {
       max-width: 800px;
@@ -61,11 +70,15 @@
       justify-content: center;
       align-items: center;
       flex-direction: column;
-      background-color: transparent; /* agora sem escurecer a tela */
+      background-color: transparent;
     }
   </style>
 </head>
 <body>
+  <div class="logo">
+    <img src="logo.png" alt="Logo">
+  </div>
+
   <div id="login" class="container">
     <h2>Login da Filial</h2>
     <label for="codigo">Código da Filial</label>
@@ -100,7 +113,7 @@
     Dynamsoft.DBR.BarcodeScanner.license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0MDgyMzg1LVRYbFhaV0pRY205cSIsIm1haW5TZXJ2ZXJVUkwiOiJodHRwczovL21kbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsIm9yZ2FuaXphdGlvbklEIjoiMTA0MDgyMzg1Iiwic3RhbmRieVNlcnZlclVSTCI6Imh0dHBzOi8vc2Rscy5keW5hbXNvZnRvbmxpbmUuY29tIiwiY2hlY2tDb2RlIjoxNzI0OTg5ODA0fQ==";
 
     const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwfoYOgleHUcmbr_1B8tV_NG6cEZxcHm5zBSrJ0ItgRV_Cp7tumh3GjBzsvzTSNJ5sbmA/exec";
-    const filiaisValidas = ["293", "488", "287", "288", "761"];
+    const filiaisValidas = ["293", "488", "287", "288", "999"];
     let scannerInstance = null;
 
     function entrar() {
