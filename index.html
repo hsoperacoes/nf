@@ -1,222 +1,95 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Consulta NF-e</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/dynamsoft-javascript-barcode@9.6.21/dist/dbr.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
       background-color: #121212;
       color: white;
-      margin: 0;
-      padding: 0;
+      font-family: Arial, sans-serif;
     }
-
     .logo {
-      background-color: #000;
+      background: #000;
+      padding: 10px;
       text-align: center;
-      padding: 15px;
     }
-
     .logo img {
       max-width: 150px;
-      height: auto;
     }
-
     .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background-color: #1e1e1e;
-      padding: 30px;
-      border-radius: 10px;
+      max-width: 600px;
+      margin: 30px auto;
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 8px;
     }
-
-    h2, h3 { text-align: center; }
-
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
     }
-
     input, button {
       width: 100%;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 5px;
+      padding: 12px;
+      margin: 10px 0;
       border: none;
+      border-radius: 5px;
       font-size: 16px;
     }
-
-    input { background-color: #2a2a2a; color: white; }
-    button { background-color: #673ab7; color: white; cursor: pointer; }
-    .hidden { display: none !important; }
-
-    .result, .history {
+    input {
+      background: #2c2c2c;
+      color: white;
+    }
+    button {
+      background: #4caf50;
+      color: white;
+      cursor: pointer;
+    }
+    #scanner {
+      width: 100%;
+      max-width: 600px;
+      height: 400px;
+      margin: 20px auto;
+      display: none;
+    }
+    #resultado, #erro {
       margin-top: 20px;
-      background-color: #2e2e2e;
       padding: 15px;
       border-radius: 5px;
     }
-
-    .error { color: #f44336; margin-top: 15px; }
-
-    .logout {
-      text-align: right;
-      margin-top: -20px;
-      margin-bottom: 10px;
+    #resultado {
+      background: #2c2c2c;
     }
-
-    .logout button {
-      padding: 5px 10px;
-      background-color: #444;
-      font-size: 14px;
-    }
-
-    #scanner {
-      width: 100%;
-      height: 100vh;
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 1000;
-      background-color: transparent;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
+    #erro {
+      background: #b71c1c;
     }
   </style>
 </head>
 <body>
-
-  <!-- LOGO NO TOPO -->
   <div class="logo">
-    <img src="logo.png" alt="Logo">
+    <img src="logo.png" alt="Logo" />
   </div>
 
-  <!-- LOGIN -->
-  <div id="login" class="container">
-    <h2>Login da Filial</h2>
-    <label for="codigo">Código da Filial</label>
-    <input type="text" id="codigo" placeholder="Digite o código da filial" />
-    <button onclick="entrar()">Entrar</button>
-  </div>
-
-  <!-- PRINCIPAL -->
-  <div id="principal" class="container hidden">
-    <div class="logout">
-      <button onclick="sair()">Sair</button>
-    </div>
+  <div class="container">
     <h2>Consulta de Nota Fiscal</h2>
-    <label for="chave">Chave de Acesso (44 dígitos)</label>
-    <input type="text" id="chave" placeholder="Digite a chave completa" maxlength="44"/>
-    <button onclick="abrirLeitor()">📷 Ler Código de Barras</button>
 
-    <div id="scanner" style="display: none;"></div>
+    <input type="text" id="chave" maxlength="44" placeholder="Digite ou escaneie a chave de 44 dígitos" />
+    <button onclick="abrirLeitor()">📷 Escanear Código de Barras</button>
+    <div id="scanner"></div>
 
-    <button onclick="consultarNota()">Consultar</button>
-    <div id="loading" class="hidden">⏳ Consultando nota fiscal...</div>
-    <div id="resultado" class="result hidden"></div>
-    <div id="erro" class="error"></div>
+    <button onclick="consultarNota()">Consultar Nota</button>
 
-    <div class="history">
-      <h3>Histórico da Filial</h3>
-      <ul id="historicoLista"></ul>
-      <button onclick="limparHistoricoLocal()">🗑 Limpar Histórico Local</button>
-    </div>
+    <div id="resultado" style="display:none;"></div>
+    <div id="erro" style="display:none;"></div>
   </div>
 
   <script>
     const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwfoYOgleHUcmbr_1B8tV_NG6cEZxcHm5zBSrJ0ItgRV_Cp7tumh3GjBzsvzTSNJ5sbmA/exec";
-    const filiaisValidas = ["293", "488", "287", "288", "999"];
-    let scannerInstance = null;
 
-    function entrar() {
-      const codigo = document.getElementById('codigo').value.trim();
-      if (!codigo || !filiaisValidas.includes(codigo)) {
-        alert("Código de filial inválido.");
-        return;
-      }
-      localStorage.setItem('filial', codigo);
-      document.getElementById('login').classList.add('hidden');
-      document.getElementById('principal').classList.remove('hidden');
-      carregarHistorico(codigo);
-    }
-
-    function sair() {
-      localStorage.removeItem('filial');
-      location.reload();
-    }
-
-    function limparHistoricoLocal() {
-      const senha = prompt("Digite a senha para limpar o histórico:");
-      if (senha !== "hs") return alert("Senha incorreta.");
-      const filial = localStorage.getItem('filial');
-      localStorage.removeItem(historico_${filial});
-      document.getElementById('historicoLista').innerHTML = '';
-      alert("Histórico apagado.");
-    }
-
-    function consultarNota() {
-      const filial = localStorage.getItem('filial');
-      const chave = document.getElementById('chave').value.trim();
-      const resultado = document.getElementById('resultado');
-      const erro = document.getElementById('erro');
-      const loading = document.getElementById('loading');
-
-      resultado.classList.add('hidden');
-      erro.innerText = '';
-
-      if (!filial || chave.length !== 44) {
-        erro.innerText = 'Preencha corretamente a chave com 44 dígitos.';
-        return;
-      }
-
-      const historico = JSON.parse(localStorage.getItem(historico_${filial})) || [];
-      if (historico.some(h => h.chave === chave)) {
-        erro.innerText = 'Essa chave já foi consultada anteriormente!';
-        return;
-      }
-
-      loading.classList.remove('hidden');
-
-      fetch(${URL_SCRIPT}?chave=${chave}&filial=${filial})
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            resultado.classList.remove('hidden');
-            resultado.innerHTML = 
-              <p><strong>Número da NF:</strong> ${data.data.numeroNF}</p>
-              <p><strong>Valor Total:</strong> ${data.data.valorTotal}</p>
-              <p><strong>Quantidade Total:</strong> ${data.data.quantidadeTotal}</p>
-              <p><strong>Status:</strong> ✅ ${data.data.status}</p>
-            ;
-            historico.push({ chave, dataHora: new Date().toISOString(), ...data.data });
-            localStorage.setItem(historico_${filial}, JSON.stringify(historico));
-            carregarHistorico(filial);
-          } else {
-            erro.innerText = data.message || 'Erro ao buscar nota fiscal.';
-          }
-        })
-        .catch(() => erro.innerText = 'Erro de comunicação com o servidor.')
-        .finally(() => loading.classList.add('hidden'));
-    }
-
-    function carregarHistorico(filial) {
-      const lista = document.getElementById('historicoLista');
-      const historico = JSON.parse(localStorage.getItem(historico_${filial})) || [];
-      lista.innerHTML = '';
-      if (historico.length === 0) {
-        lista.innerHTML = '<li>Nenhum histórico local encontrado.</li>';
-        return;
-      }
-      historico.slice().reverse().forEach(item => {
-        const data = new Date(item.dataHora).toLocaleDateString('pt-BR');
-        lista.innerHTML += <li>${data} - NF ${item.numeroNF} - ${item.valorTotal} - ${item.quantidadeTotal} itens</li>;
-      });
-    }
+    let scanner = null;
 
     async function abrirLeitor() {
       const scannerDiv = document.getElementById("scanner");
@@ -224,45 +97,60 @@
 
       Dynamsoft.DBR.BarcodeScanner.license = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0MDgyMzg1LVRYbFhaV0pRY205cSIsIm1haW5TZXJ2ZXJVUkwiOiJodHRwczovL21kbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsIm9yZ2FuaXphdGlvbklEIjoiMTA0MDgyMzg1Iiwic3RhbmRieVNlcnZlclVSTCI6Imh0dHBzOi8vc2Rscy5keW5hbXNvZnRvbmxpbmUuY29tIiwiY2hlY2tDb2RlIjoxNzI0OTg5ODA0fQ==";
 
-      try {
-        scannerInstance = await Dynamsoft.DBR.BarcodeScanner.createInstance();
-        await scannerInstance.updateRuntimeSettings("speed");
+      scanner = await Dynamsoft.DBR.BarcodeScanner.createInstance();
+      await scanner.updateRuntimeSettings("speed");
 
-        scannerInstance.onFrameRead = results => {
-          for (let result of results) {
-            const codigo = result.barcodeText;
-            if (codigo.length >= 44) {
-              document.getElementById("chave").value = codigo.substring(0, 44);
-              if (scannerInstance) {
-                try {
-                  scannerInstance.hide();
-                  scannerInstance.stop();
-                  scannerInstance = null;
-                } catch (e) {
-                  console.error("Erro ao fechar o scanner:", e);
-                }
-              }
-              scannerDiv.style.display = "none";
-              break;
-            }
+      scanner.onFrameRead = results => {
+        for (let result of results) {
+          const codigo = result.barcodeText;
+          if (codigo.length === 44) {
+            document.getElementById("chave").value = codigo;
+            scanner.hide();
+            scanner.stop();
+            document.getElementById("scanner").style.display = "none";
+            break;
           }
-        };
+        }
+      };
 
-        await scannerInstance.show(scannerDiv);
-      } catch (ex) {
-        alert("Erro ao iniciar o leitor: " + ex.message);
-        scannerDiv.style.display = "none";
-      }
+      await scanner.show(scannerDiv);
     }
 
-    window.onload = () => {
-      const filial = localStorage.getItem('filial');
-      if (filial) {
-        document.getElementById('login').classList.add('hidden');
-        document.getElementById('principal').classList.remove('hidden');
-        carregarHistorico(filial);
+    function consultarNota() {
+      const chave = document.getElementById("chave").value.trim();
+      const resultado = document.getElementById("resultado");
+      const erro = document.getElementById("erro");
+
+      resultado.style.display = "none";
+      erro.style.display = "none";
+
+      if (chave.length !== 44) {
+        erro.innerText = "Chave inválida. Deve conter exatamente 44 dígitos.";
+        erro.style.display = "block";
+        return;
       }
-    };
+
+      fetch(`${URL_SCRIPT}?chave=${chave}&filial=999`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            resultado.innerHTML = `
+              <p><strong>Número da NF:</strong> ${data.data.numeroNF}</p>
+              <p><strong>Valor Total:</strong> ${data.data.valorTotal}</p>
+              <p><strong>Quantidade Total:</strong> ${data.data.quantidadeTotal}</p>
+              <p><strong>Status:</strong> ✅ ${data.data.status}</p>
+            `;
+            resultado.style.display = "block";
+          } else {
+            erro.innerText = data.message || "Erro ao buscar nota fiscal.";
+            erro.style.display = "block";
+          }
+        })
+        .catch(() => {
+          erro.innerText = "Erro de comunicação com o servidor.";
+          erro.style.display = "block";
+        });
+    }
   </script>
 </body>
 </html>
